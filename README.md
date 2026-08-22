@@ -1,6 +1,6 @@
 # Music Video Generator
 
-[English](README.md) · [Русский](README.ru.md)
+[English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
 
 Local, code-only toolkit for generating instrumental music, tracking generation progress, assembling music videos, previewing results on a LAN, and creating private YouTube drafts through Postiz.
 
