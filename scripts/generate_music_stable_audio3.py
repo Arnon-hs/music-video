@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stable Audio 3 Small-Music adapter for clean instrumental lo-fi tracks."""
+"""Stable Audio 3 Small-Music adapter for instrumental tracks."""
 
 from __future__ import annotations
 
@@ -29,9 +29,14 @@ with contextlib.redirect_stdout(_stable_audio_import_output), contextlib.redirec
     from stable_audio_3 import StableAudioModel
 
 
-BASE_PROMPT = (
-    "clean purely instrumental lo-fi hip hop, no human voice, no vocals, no singing, "
+INSTRUMENTAL_GUARD = (
+    "purely instrumental original composition, no human voice, no vocals, no singing, "
     "no spoken words, no rap, no choir, no chants, no vocal chops, no lyrics, "
+    "no artist imitation, no recognisable copyrighted melody"
+)
+
+BASE_PROMPT = (
+    "clean lo-fi hip hop, "
     "cozy rainy late-night coffee shop mood, pleasant uplifting calm feeling, "
     "80-90 BPM, mellow piano, acoustic guitar, soft brushed jazz drums, warm rounded bass, "
     "subtle vinyl crackle, very quiet rain ambience, smooth consonant jazz harmony, "
@@ -45,7 +50,7 @@ NEGATIVE_PROMPT = (
     "vocals, singing, human voice, speech, spoken word, rap, lyrics, choir, chant, "
     "vocal sample, vocal chop, crowd, shouting, screaming, horror, scary, ominous, "
     "harsh noise, white noise, static, hiss, distortion, clipping, glitch, siren, "
-    "aggressive drums, drop, build-up, sudden transition, copied hook, repeated melody from another track"
+    "copied hook, repeated melody from another track"
 )
 
 ALBUM_PROFILES = {
@@ -119,6 +124,7 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=8)
     parser.add_argument("--cfg-scale", type=float, default=1.0)
     parser.add_argument("--album-style", default="rainy-cafe")
+    parser.add_argument("--prompt", default=None)
     parser.add_argument("--variant", default=None, help="Deprecated alias for --album-style")
     parser.add_argument("--track-index", type=int, default=1)
     parser.add_argument("--track-name", default="original-instrumental-motif")
@@ -136,15 +142,27 @@ def main() -> None:
     profile = profiles.get(album_style, {"prompt": album_style, "bpm": 85})
     identity_index = (args.track_index - 1) % len(IDENTITIES)
     track_variation = library["track_variations"][identity_index]
-    prompt = (
-        f"{BASE_PROMPT}, album profile: {profile['prompt']}, "
-        f"album tempo anchor: {profile.get('bpm', 85)} BPM, "
-        f"track title concept: {args.track_name}, "
-        f"distinct track identity: {IDENTITIES[identity_index]}, "
-        f"track-specific arrangement and instrumentation: {track_variation['prompt']}, "
-        f"do not use these competing lead instruments: {track_variation['avoid']}, "
-        "keep the album profile unchanged while composing a fresh melody and fresh chord voicing"
-    )
+    if args.prompt:
+        prompt = (
+            f"{INSTRUMENTAL_GUARD}, {args.prompt}, "
+            f"track title concept: {args.track_name}, "
+            "compose a fresh genre-appropriate motif, arrangement, instrumentation, and chord voicing"
+        )
+        negative_prompt = NEGATIVE_PROMPT
+    else:
+        prompt = (
+            f"{INSTRUMENTAL_GUARD}, {BASE_PROMPT}, album profile: {profile['prompt']}, "
+            f"album tempo anchor: {profile.get('bpm', 85)} BPM, "
+            f"track title concept: {args.track_name}, "
+            f"distinct track identity: {IDENTITIES[identity_index]}, "
+            f"track-specific arrangement and instrumentation: {track_variation['prompt']}, "
+            f"do not use these competing lead instruments: {track_variation['avoid']}, "
+            "keep the album profile unchanged while composing a fresh melody and fresh chord voicing"
+        )
+        negative_prompt = f"{NEGATIVE_PROMPT}, {track_variation['avoid']}"
+    status = root / "tmp" / "render-progress.txt"
+    status.parent.mkdir(parents=True, exist_ok=True)
+    status.write_text("state=loading_model\nmusic_percent=0\nmusic_step=loading Stable Audio 3\n", encoding="utf-8")
     model = StableAudioModel.from_pretrained("small-music", model_half=False)
     sample_rate = int(model.model.sample_rate)
 
@@ -159,7 +177,7 @@ def main() -> None:
                 segment_prompt += ", seamless continuation of this exact track, preserve its motif and groove, no intro, no ending, no new section"
             audio = model.generate(
                 prompt=segment_prompt,
-                negative_prompt=f"{NEGATIVE_PROMPT}, {track_variation['avoid']}",
+                negative_prompt=negative_prompt,
                 duration=args.segment_seconds,
                 steps=args.steps,
                 cfg_scale=args.cfg_scale,
@@ -170,7 +188,12 @@ def main() -> None:
             save_audio(audio, sample_rate, part)
             parts.append(part)
             print(f"generated segment {index + 1}/2", flush=True)
+            status.write_text(
+                f"state=generating_music\nmusic_percent={(index + 1) * 40}\nmusic_step=segment {index + 1}/2\n",
+                encoding="utf-8",
+            )
         args.output.parent.mkdir(parents=True, exist_ok=True)
+        status.write_text("state=assembling_audio\nmusic_percent=90\nmusic_step=crossfading segments\n", encoding="utf-8")
         subprocess.run(
             [
                 "ffmpeg", "-hide_banner", "-loglevel", "warning", "-y",
@@ -181,6 +204,7 @@ def main() -> None:
             ],
             check=True,
         )
+    status.write_text(f"state=music_complete\nmusic_percent=100\nmusic_step=complete\nmusic_file={args.output}\n", encoding="utf-8")
     print(f"Generated {args.output}", flush=True)
 
 

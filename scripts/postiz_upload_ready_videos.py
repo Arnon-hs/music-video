@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload completed v4 videos to Postiz as private YouTube drafts."""
+"""Upload completed music videos to Postiz as private YouTube drafts."""
 
 from __future__ import annotations
 
@@ -14,16 +14,17 @@ from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VIDEO_ROOT = ROOT / "output" / "stable-audio3-albums-v4"
-STATE_PATH = ROOT / "tmp" / "postiz-uploaded-v4.json"
+_video_root = Path(os.environ.get("POSTIZ_VIDEO_ROOT", "output")).expanduser()
+VIDEO_ROOT = (_video_root if _video_root.is_absolute() else ROOT / _video_root).resolve()
+STATE_PATH = ROOT / "tmp" / "postiz-uploaded.json"
 LOG_PATH = ROOT / "tmp" / "postiz-upload.log"
-API_ROOT = "https://api.postiz.com/public/v1"
-INTEGRATION_ID = "cmrak761d0f54k90ywfawy5ql"
+API_ROOT = os.environ.get("POSTIZ_API_ROOT", "https://api.postiz.com/public/v1").rstrip("/")
 
 
 def log(message: str) -> None:
     line = f"{datetime.now(timezone.utc).isoformat()} {message}"
     print(line, flush=True)
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     with LOG_PATH.open("a", encoding="utf-8") as stream:
         stream.write(line + "\n")
 
@@ -52,21 +53,28 @@ def upload_video(api_key: str, video: Path) -> dict:
     return json.loads(result.stdout)
 
 
-def create_draft(api_key: str, media: dict, video: Path, preview_url: str) -> dict:
+def create_draft(api_key: str, integration_id: str, media: dict, video: Path, source_label: str, preview_url: str) -> dict:
     title = video.stem.replace("-", " ").replace("album ", "Album ").title()
-    description = (
-        "AI-generated lo-fi instrumental album video.\n\n"
-        f"Local preview URL: {preview_url}\n"
-        f"Source file: {video}\n"
-        "Visibility: private YouTube draft; review before publishing."
+    description_lines = [
+        "AI-generated instrumental music video.",
+        "",
+    ]
+    if preview_url:
+        description_lines.append(f"Local preview URL: {preview_url}")
+    description_lines.extend(
+        [
+            f"Source file: {source_label}",
+            "Visibility: private YouTube draft; review before publishing.",
+        ]
     )
+    description = "\n".join(description_lines)
     payload = {
         "type": "draft",
         "shortLink": False,
         "tags": [],
         "posts": [
             {
-                "integration": {"id": INTEGRATION_ID},
+                "integration": {"id": integration_id},
                 "value": [{"content": description, "image": [{"id": media["id"], "path": media["path"]}]}],
                 "settings": {
                     "__type": "youtube",
@@ -74,9 +82,9 @@ def create_draft(api_key: str, media: dict, video: Path, preview_url: str) -> di
                     "type": "private",
                     "selfDeclaredMadeForKids": "no",
                     "tags": [
-                        {"value": "lofi", "label": "lo-fi"},
-                        {"value": "study music", "label": "study music"},
                         {"value": "instrumental", "label": "instrumental"},
+                        {"value": "ai music", "label": "AI music"},
+                        {"value": "music video", "label": "music video"},
                     ],
                 },
             }
@@ -92,25 +100,26 @@ def create_draft(api_key: str, media: dict, video: Path, preview_url: str) -> di
         return json.loads(response.read().decode("utf-8"))
 
 
-def process_once(api_key: str, base_url: str) -> int:
+def process_once(api_key: str, integration_id: str, base_url: str) -> int:
     state = load_state()
     videos = sorted(VIDEO_ROOT.rglob("*.mp4")) if VIDEO_ROOT.exists() else []
     for video in videos:
         key = video.relative_to(VIDEO_ROOT).as_posix()
         if key in state:
             continue
-        preview_url = f"{base_url.rstrip('/')}/media/video/{key}"
+        preview_url = f"{base_url.rstrip('/')}/media/video/{key}" if base_url else ""
         log(f"uploading {key}")
         media = upload_video(api_key, video)
-        response = create_draft(api_key, media, video, preview_url)
+        response = create_draft(api_key, integration_id, media, video, key, preview_url)
         item = response[0] if isinstance(response, list) else response
         state[key] = {
             "post_id": item.get("postId") or item.get("id"),
-            "integration": INTEGRATION_ID,
+            "integration": integration_id,
             "media_url": media.get("path"),
-            "preview_url": preview_url,
             "uploaded_at": datetime.now(timezone.utc).isoformat(),
         }
+        if preview_url:
+            state[key]["preview_url"] = preview_url
         save_state(state)
         log(f"draft created for {key}: post_id={state[key]['post_id']}")
     return len(videos)
@@ -124,9 +133,12 @@ def main() -> None:
     api_key = os.environ.get("POSTIZ_API_KEY")
     if not api_key:
         raise SystemExit("POSTIZ_API_KEY is required in the environment")
-    base_url = os.environ.get("POSTIZ_LOCAL_BASE_URL", "http://192.168.1.105:8765")
+    integration_id = os.environ.get("POSTIZ_INTEGRATION_ID")
+    if not integration_id:
+        raise SystemExit("POSTIZ_INTEGRATION_ID is required in the environment")
+    base_url = os.environ.get("POSTIZ_LOCAL_BASE_URL", "").strip()
     while True:
-        process_once(api_key, base_url)
+        process_once(api_key, integration_id, base_url)
         if not args.watch:
             return
         time.sleep(args.interval)

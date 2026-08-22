@@ -55,6 +55,11 @@ MELODIC_IDENTITIES = {
     "15": "a hopeful dawn motif, soft guitar harmonics and tender piano resolution",
 }
 
+INSTRUMENTAL_GUARD = (
+    "purely instrumental original composition, no vocals, singing, speech, rap, choir, chants, "
+    "vocal chops or voice samples, no artist imitation, no recognisable copyrighted melody"
+)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -62,6 +67,7 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=24)
     parser.add_argument("--cfg-strength", type=float, default=1.5)
     parser.add_argument("--variant", default="rainy-cafe")
+    parser.add_argument("--prompt", default=None)
     parser.add_argument("--song-name", default="lofi_instrumental")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--track-index", type=int, default=1)
@@ -81,6 +87,8 @@ def main() -> None:
     work.mkdir(parents=True, exist_ok=True)
     result_dir.mkdir(parents=True, exist_ok=True)
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    status = root / "tmp" / "render-progress.txt"
+    status.write_text("state=generating_music\nmusic_percent=5\nmusic_step=starting DiffRhythm 2\n", encoding="utf-8")
     for old in result_dir.glob(f"{args.song_name}.*"):
         old.unlink()
 
@@ -90,14 +98,22 @@ def main() -> None:
         encoding="utf-8",
     )
     request = work / "request.jsonl"
+    if args.prompt:
+        style_prompt = (
+            f"{args.prompt}, {INSTRUMENTAL_GUARD}, "
+            "a distinct original instrumental motif and arrangement appropriate to the requested style"
+        )
+    else:
+        style_prompt = (
+            f"{STYLE_PROMPT}, {VARIANT_SUFFIXES.get(args.variant, args.variant)}, "
+            f"{INSTRUMENTAL_GUARD}, "
+            f"track identity: {MELODIC_IDENTITIES.get(str(args.track_index), 'distinct original instrumental melody')}"
+        )
     request.write_text(
         json.dumps(
             {
                 "song_name": args.song_name,
-                "style_prompt": (
-                    f"{STYLE_PROMPT}, {VARIANT_SUFFIXES.get(args.variant, args.variant)}, "
-                    f"track identity: {MELODIC_IDENTITIES.get(str(args.track_index), 'distinct original instrumental melody')}"
-                ),
+                "style_prompt": style_prompt,
                 "lyrics": str(lyrics),
             }
         )
@@ -131,10 +147,22 @@ def main() -> None:
         env=env,
         check=True,
     )
+    status.write_text("state=saving_audio\nmusic_percent=95\nmusic_step=saving generated track\n", encoding="utf-8")
     candidates = sorted(result_dir.glob(f"{args.song_name}.*"))
     if not candidates:
         raise SystemExit(f"DiffRhythm2 produced no file in {result_dir}")
-    args.output.write_bytes(candidates[0].read_bytes())
+    source = candidates[0]
+    if source.suffix.lower() == args.output.suffix.lower():
+        args.output.write_bytes(source.read_bytes())
+    else:
+        subprocess.run(
+            [
+                "ffmpeg", "-hide_banner", "-loglevel", "warning", "-y",
+                "-i", str(source), str(args.output),
+            ],
+            check=True,
+        )
+    status.write_text(f"state=music_complete\nmusic_percent=100\nmusic_step=complete\nmusic_file={args.output}\n", encoding="utf-8")
     print(f"Generated {args.output}")
 
 

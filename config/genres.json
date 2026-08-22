@@ -1,0 +1,77 @@
+{
+  "instrumental_guard": "Purely instrumental original composition. No vocals, singing, speech, spoken words, rap, choir, chants, vocal chops, voice samples, or artist imitation. No recognisable copyrighted melody.",
+  "genres": [
+    {
+      "slug": "lofi",
+      "title": "Lo-fi",
+      "bpm": "78-90",
+      "prompt": "Warm lo-fi hip-hop with dusty drums, mellow Rhodes, soft bass, subtle vinyl texture, gentle tape wobble, and a relaxed study-friendly groove."
+    },
+    {
+      "slug": "techno",
+      "title": "Techno",
+      "bpm": "126-132",
+      "prompt": "Driving melodic techno with a steady four-on-the-floor kick, rolling bass, hypnotic sequencer patterns, evolving synth layers, controlled tension, and a clean club mix."
+    },
+    {
+      "slug": "classical",
+      "title": "Classical",
+      "bpm": "60-110",
+      "prompt": "Modern classical chamber music led by expressive piano and warm strings, with clear thematic development, natural dynamics, elegant harmony, and an intimate concert-hall sound."
+    },
+    {
+      "slug": "electronic",
+      "title": "Electronic",
+      "bpm": "105-124",
+      "prompt": "Polished contemporary electronic music with layered synthesizers, a precise rhythmic pulse, deep controlled bass, evolving textures, memorable original motifs, and a spacious stereo mix."
+    },
+    {
+      "slug": "ambient",
+      "title": "Ambient",
+      "bpm": "free-80",
+      "prompt": "Spacious ambient soundscape with slow harmonic movement, soft drones, delicate piano or synth details, long natural reverbs, gentle organic texture, and no abrupt transitions."
+    },
+    {
+      "slug": "house",
+      "title": "Deep House",
+      "bpm": "118-124",
+      "prompt": "Deep house with a warm four-on-the-floor groove, rounded bassline, syncopated chords, subtle percussion, smooth builds, tasteful drops, and an elegant late-night club atmosphere."
+    },
+    {
+      "slug": "synthwave",
+      "title": "Synthwave",
+      "bpm": "90-115",
+      "prompt": "Retro synthwave with analog arpeggios, gated drums, warm pads, melodic bass, neon-night atmosphere, cinematic movement, and a fresh original lead motif."
+    },
+    {
+      "slug": "jazz",
+      "title": "Jazz",
+      "bpm": "80-140",
+      "prompt": "Modern instrumental jazz with piano, upright bass, brushed or restrained drums, tasteful harmonic extensions, conversational improvisation, and a natural small-room recording feel."
+    },
+    {
+      "slug": "drum-and-bass",
+      "title": "Drum & Bass",
+      "bpm": "168-176",
+      "prompt": "Liquid drum and bass with crisp breakbeats, deep sub bass, luminous pads, flowing chord changes, energetic forward motion, and a melodic but uncluttered arrangement."
+    },
+    {
+      "slug": "cinematic",
+      "title": "Cinematic",
+      "bpm": "60-120",
+      "prompt": "Cinematic instrumental score with piano, strings, low percussion, evolving orchestral layers, a clear emotional arc, restrained climax, and original thematic material."
+    },
+    {
+      "slug": "chillout",
+      "title": "Chillout",
+      "bpm": "85-105",
+      "prompt": "Downtempo chillout with soft electronic drums, warm pads, relaxed bass, gentle guitar or keyboard accents, airy transitions, and an easy sunset atmosphere."
+    },
+    {
+      "slug": "instrumental-hip-hop",
+      "title": "Instrumental Hip-Hop",
+      "bpm": "82-98",
+      "prompt": "Instrumental hip-hop with punchy drums, warm bass, original keyboard and guitar phrases, subtle sampling-style texture made from newly generated material, and a confident head-nod groove."
+    }
+  ]
+}

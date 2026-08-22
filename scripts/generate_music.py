@@ -2,6 +2,7 @@
 """Generate a non-commercial MusicGen demo locally, then make a 60-minute mix."""
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import shutil
@@ -21,19 +22,33 @@ MODEL_ID = "facebook/musicgen-small"
 MODEL_CACHE = ROOT / "models" / "huggingface"
 MUSIC_DIR = Path(os.environ.get("MUSIC_DIR_OVERRIDE", str(ROOT / "assets" / "music")))
 METADATA_DIR = ROOT / "metadata"
+STATUS = ROOT / "tmp" / "render-progress.txt"
 VARIATIONS = [
-    "emphasize warm Rhodes chords and restrained drums",
-    "add sparse, original muted guitar fragments",
-    "make distant rain ambience slightly more present",
-    "add subtle tape wow and flutter",
-    "add a soft, low-volume synth pad",
-    "emphasize dusty vinyl crackle without a melody",
+    "introduce a subtle original rhythmic variation while preserving the genre",
+    "change the harmonic voicing without changing the central mood",
+    "add a restrained counter-motif using genre-appropriate instrumentation",
+    "vary percussion texture and dynamics without adding a voice",
+    "create a fresh transition into the next phrase",
+    "develop the original motif without quoting an existing melody",
 ]
 
 
 def require(command: str) -> None:
     if not shutil.which(command):
         raise RuntimeError(f"Required command is missing: {command}")
+
+
+def write_status(**values: object) -> None:
+    STATUS.parent.mkdir(parents=True, exist_ok=True)
+    current = {}
+    if STATUS.exists():
+        current = {
+            line.split("=", 1)[0]: line.split("=", 1)[1]
+            for line in STATUS.read_text(encoding="utf-8").splitlines()
+            if "=" in line
+        }
+    current.update({key: str(value) for key, value in values.items()})
+    STATUS.write_text("".join(f"{key}={value}\n" for key, value in current.items()), encoding="utf-8")
 
 
 def confirm_model_download() -> bool:
@@ -48,6 +63,15 @@ def confirm_model_download() -> bool:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--duration", type=int, default=3600, help="final duration in seconds")
+    parser.add_argument("--seed", type=int, default=20260724)
+    parser.add_argument("--prompt", default=None)
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--force-cpu", action="store_true")
+    args = parser.parse_args()
+    if args.duration < 10:
+        parser.error("--duration must be at least 10 seconds")
     try:
         require("ffmpeg")
         require("ffprobe")
@@ -69,9 +93,12 @@ def main() -> int:
         print("Cancelled before model download. No model files were fetched.")
         return 0
 
-    MUSIC_DIR.mkdir(parents=True, exist_ok=True)
+    music_dir = args.output.parent if args.output else MUSIC_DIR
+    final = args.output or (music_dir / "lofi-demo.wav")
+    music_dir.mkdir(parents=True, exist_ok=True)
     METADATA_DIR.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("HF_HOME", str(MODEL_CACHE))
+    write_status(state="loading_model", music_percent=0, music_step="loading MusicGen")
     print("Loading local MusicGen. MPS will be used when supported; CPU fallback will be offered on an MPS error.")
     try:
         processor = AutoProcessor.from_pretrained(MODEL_ID, cache_dir=str(MODEL_CACHE))
@@ -83,7 +110,7 @@ def main() -> int:
         print(f"Model loading failed: {exc}", file=sys.stderr)
         return 1
 
-    device = "cpu" if os.environ.get("FORCE_CPU") == "1" else ("mps" if torch.backends.mps.is_available() else "cpu")
+    device = "cpu" if args.force_cpu or os.environ.get("FORCE_CPU") == "1" else ("mps" if torch.backends.mps.is_available() else "cpu")
     if device == "mps":
         internal_free = shutil.disk_usage("/").free
         minimum_mps_scratch = 12 * 1024**3
@@ -105,17 +132,19 @@ def main() -> int:
         device = "cpu"
         model.to(device).eval()
 
-    base_prompt = os.environ.get("MUSIC_PROMPT_OVERRIDE", config["music_prompt"])
+    base_prompt = args.prompt or os.environ.get("MUSIC_PROMPT_OVERRIDE", config["music_prompt"])
     paths: list[Path] = []
     for index in range(count):
-        seed = 20260724 + index * 7919
+        seed = args.seed + index * 7919
         prompt = f"{base_prompt} {VARIATIONS[index % len(VARIATIONS)]}. Original variation {index + 1}; no recognisable melody."
-        destination = MUSIC_DIR / f"segment-{index + 1:02d}.wav"
+        destination = music_dir / f"segment-{index + 1:02d}.wav"
         if destination.exists() and destination.stat().st_size > 100_000:
             print(f"Keeping existing segment {index + 1}/{count}: {destination.name}")
             paths.append(destination)
+            write_status(state="generating_music", music_percent=int((index + 1) * 80 / count), music_step=f"segment {index + 1}/{count}")
             continue
         print(f"Generating segment {index + 1}/{count} on {device} (seed {seed})...")
+        write_status(state="generating_music", music_percent=int(index * 80 / count), music_step=f"segment {index + 1}/{count}")
         try:
             torch.manual_seed(seed)
             if device == "mps":
@@ -142,6 +171,7 @@ def main() -> int:
         waveform = waveform[:target_samples] if len(waveform) >= target_samples else np.pad(waveform, (0, target_samples - len(waveform)))
         sf.write(destination, waveform, sample_rate, subtype="PCM_16")
         paths.append(destination)
+        write_status(state="generating_music", music_percent=int((index + 1) * 80 / count), music_step=f"segment {index + 1}/{count}")
 
     filter_parts = []
     for index in range(len(paths)):
@@ -151,13 +181,15 @@ def main() -> int:
         label = f"x{index}"
         filter_parts.append(f"{chain}[a{index}]acrossfade=d=4:c1=tri:c2=tri[{label}]")
         chain = f"[{label}]"
-    master = MUSIC_DIR / "lofi-demo-master.wav"
+    write_status(state="assembling_audio", music_percent=85, music_step="crossfading source segments")
+    master = music_dir / "musicgen-master.wav"
     subprocess.run(["ffmpeg", "-hide_banner", "-y", *sum((["-i", str(p)] for p in paths), []), "-filter_complex", ";".join(filter_parts), "-map", chain, "-c:a", "pcm_s16le", str(master)], check=True)
-    final = MUSIC_DIR / "lofi-demo.wav"
-    duration_seconds = int(config["duration_minutes"]) * 60
-    subprocess.run(["ffmpeg", "-hide_banner", "-y", "-stream_loop", "-1", "-i", str(master), "-t", str(duration_seconds), "-af", "afade=t=in:st=0:d=2,afade=t=out:st=3596:d=4", "-c:a", "pcm_s16le", str(final)], check=True)
+    duration_seconds = args.duration
+    write_status(state="assembling_audio", music_percent=92, music_step="building final duration")
+    subprocess.run(["ffmpeg", "-hide_banner", "-y", "-stream_loop", "-1", "-i", str(master), "-t", str(duration_seconds), "-af", f"afade=t=in:st=0:d=2,afade=t=out:st={max(0, duration_seconds - 4)}:d=4", "-c:a", "pcm_s16le", str(final)], check=True)
     (METADATA_DIR / "music-license.txt").write_text("NON_COMMERCIAL_DEMO — MusicGen CC-BY-NC 4.0\nGenerated locally with facebook/musicgen-small. Replace lofi-demo.wav with a fully cleared final track before any commercial release.\n", encoding="utf-8")
     (METADATA_DIR / "segments.txt").write_text(json.dumps({"source_segments": [p.name for p in paths], "crossfade_seconds": 4, "master_duration_seconds": 316, "final_duration_seconds": duration_seconds, "label": "NON_COMMERCIAL_DEMO"}, indent=2) + "\n", encoding="utf-8")
+    write_status(state="music_complete", music_percent=100, music_step="complete", music_file=final)
     print(f"Created {final.relative_to(ROOT)} — NON_COMMERCIAL_DEMO")
     return 0
 

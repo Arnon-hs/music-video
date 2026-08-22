@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local Apache-2.0 ACE-Step generator for commercial-track drafts.
+"""Local ACE-Step generator for original instrumental drafts.
 
 Run this file only through ace-step-v1/.venv. The default CPU offload is
 intentional for Apple Silicon machines with 16 GB unified memory.
@@ -78,7 +78,7 @@ def main() -> int:
 
     config = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
     prompt = args.prompt or config["music_prompt"]
-    commercial_prompt = f"{prompt} Original composition for commercial use; no artist imitation, no recognisable melody."
+    rights_prompt = f"{prompt} Original composition; no artist imitation, no recognisable melody."
     OUTPUT.mkdir(parents=True, exist_ok=True)
     target = OUTPUT / f"ace-step-{int(args.duration)}s-seed-{args.seed}.wav"
     write_status(state="loading_model", music_percent=0, music_step="loading checkpoint")
@@ -93,7 +93,7 @@ def main() -> int:
     pipeline(
         format="wav",
         audio_duration=args.duration,
-        prompt=commercial_prompt,
+        prompt=rights_prompt,
         lyrics="",
         infer_step=args.steps,
         guidance_scale=7.0,
@@ -103,6 +103,7 @@ def main() -> int:
         save_path=str(target),
     )
     write_status(state="music_complete", music_percent=100, music_step=f"{args.steps}/{args.steps}", music_file=target)
+    (ROOT / "metadata").mkdir(parents=True, exist_ok=True)
     (ROOT / "metadata" / "ace-step-license.txt").write_text(
         "ACE-Step-v1-3.5B model weights: Apache-2.0.\n"
         "Commercial use is permitted by the model license; review generated output for originality and third-party rights before release.\n",

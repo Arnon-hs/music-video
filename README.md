@@ -1,165 +1,367 @@
 # Music Video Generator
 
-Локальный набор скриптов для генерации lo-fi музыки, сборки часовых музыкальных видео, просмотра прогресса в локальной сети и создания приватных черновиков YouTube через Postiz.
+[English](README.md) · [Русский](README.ru.md)
 
-Репозиторий содержит только код и конфигурацию. Видео, аудио, изображения, модели, веса, сторонние исходные репозитории, виртуальные окружения, журналы, временные файлы и реальные ключи API намеренно не включены.
+Local, code-only toolkit for generating instrumental music, tracking generation progress, assembling music videos, previewing results on a LAN, and creating private YouTube drafts through Postiz.
 
-## Владелец и лицензия
+The repository contains orchestration code and safe configuration only. Generated audio/video, images, model weights, third-party source trees, virtual environments, logs, temporary files, and real credentials are excluded from Git.
 
-Оригинальный код, конфигурация и документация в этом репозитории являются собственностью **Vasilii Bereznikov**.
+## Features
 
-Copyright © 2026 Vasilii Bereznikov. All Rights Reserved. Использование, копирование, изменение и распространение без предварительного письменного разрешения владельца запрещены. Полный текст находится в [LICENSE](LICENSE).
+- interactive terminal wizard: run `./music-video` with no arguments;
+- scriptable CLI for people, LLMs, and coding agents;
+- 12 voice-free genres, including techno, lo-fi, classical, electronic, ambient, house, synthwave, jazz, drum & bass, cinematic, chillout, and instrumental hip-hop;
+- MusicGen, ACE-Step, DiffRhythm 2, and Stable Audio 3 adapters;
+- live stage, percentage when available, elapsed time, and backend output in the terminal;
+- optional MP4 assembly from local images;
+- machine-readable `genres`, `doctor`, and `status` output;
+- private Postiz/YouTube draft workflow;
+- no model or media downloads without the underlying tool's explicit action.
 
-Эта лицензия не распространяется на сторонние модели, библиотеки, сервисы и материалы. Для каждого выбранного генератора и каждого медиафайла необходимо отдельно проверить актуальную лицензию и права на коммерческое использование. В частности, `facebook/musicgen-small` использует некоммерческие веса; результаты этого режима должны оставаться помеченными `NON_COMMERCIAL_DEMO`.
+## License
 
-## Что находится в репозитории
+Copyright 2026 Vasilii Bereznikov.
 
-- `scripts/` — генерация музыки, сборка видео, очереди альбомов, локальная status page и Postiz uploader;
-- `config.yaml` — параметры MusicGen и Pexels-поиска;
-- `config/stable_audio3_prompt_library.json` — профили альбомов и вариации треков;
-- `.env.example` — только имена переменных и безопасные примеры;
-- `requirements-musicgen.txt` — проверенный набор базовых Python-зависимостей для MusicGen-режима.
+This project uses the [PolyForm Noncommercial License 1.0.0](LICENSE). You may use, study, modify, and share the code for permitted noncommercial purposes, provided that the license and required notice remain with distributed copies.
 
-Во время работы скрипты создают локальные каталоги `assets/`, `models/`, `output/`, `tmp/` и `metadata/`. Все они исключены из Git.
+This is a source-available community license, not an OSI-approved open-source license. Apache-2.0 was intentionally not used because it permits commercial use. Commercial use is not granted by this repository license and requires separate permission from the owner.
 
-## Системные требования
+Third-party model code, weights, services, media, and generated outputs remain subject to their own licenses and rights. A permissive model-code license does not automatically clear model weights or generated music for publication.
 
-- macOS или Linux;
-- Python 3.9+;
-- `ffmpeg`, `ffprobe`, `curl` и `jq`;
-- достаточно свободного места для выбранной модели, временного аудио и финального видео;
-- для Apple Silicon: перед MPS-генерацией проверьте свободное место и оставьте возможность CPU fallback.
-
-На macOS системные утилиты можно установить так:
-
-```bash
-brew install ffmpeg jq
-```
-
-Проверка окружения:
-
-```bash
-./scripts/check_dependencies.sh
-```
-
-## Быстрый запуск: MusicGen (только NON_COMMERCIAL_DEMO)
+## Quick start
 
 ```bash
 git clone git@github.com:Arnon-hs/music-video.git
 cd music-video
 
+./music-video doctor
+./music-video genres
+./music-video
+```
+
+The no-argument command starts a small interactive UI:
+
+1. choose a genre;
+2. choose an installed backend;
+3. choose duration;
+4. optionally build a video from `assets/images`;
+5. optionally force CPU mode;
+6. watch progress until the final path is printed.
+
+## CLI reference
+
+```bash
+./music-video --help
+./music-video genres
+./music-video genres --json
+./music-video doctor
+./music-video doctor --json
+./music-video status
+./music-video status --json
+```
+
+Generate a 60-second techno track with ACE-Step:
+
+```bash
+./music-video generate \
+  --backend ace-step \
+  --genre techno \
+  --duration 60
+```
+
+Generate classical music and assemble an MP4 from local images:
+
+```bash
+./music-video generate \
+  --backend stable-audio3 \
+  --genre classical \
+  --duration 120 \
+  --video
+```
+
+Preview the exact command and prompt without loading a model:
+
+```bash
+./music-video generate \
+  --backend diffrhythm2 \
+  --genre drum-and-bass \
+  --duration 180 \
+  --dry-run
+```
+
+Use an LLM-written instrumental prompt instead of the built-in genre prompt:
+
+```bash
+./music-video generate \
+  --backend ace-step \
+  --genre electronic \
+  --duration 90 \
+  --prompt "Instrumental modular electronic music, 118 BPM, evolving polyrhythms, deep bass, no vocals, no speech, original melody"
+```
+
+Important flags:
+
+| Flag | Meaning |
+|---|---|
+| `--backend` | `musicgen`, `ace-step`, `diffrhythm2`, or `stable-audio3` |
+| `--genre` | genre slug; aliases include `classic`, `lo-fi`, and `dnb` |
+| `--duration` | output duration in seconds; backend limits are validated before launch |
+| `--seed` | deterministic generation seed |
+| `--prompt` | custom style prompt that replaces the selected genre description; the instrumental guard is still appended |
+| `--video` | render an MP4 after audio generation |
+| `--force-cpu` | disable GPU/MPS use where supported |
+| `--allow-downloads` | explicitly allow DiffRhythm/Stable Audio to fetch missing model files |
+| `--dry-run` | print the prompt, output path, and command without running the model |
+
+Genre definitions live in [`config/genres.json`](config/genres.json). Every built-in or custom prompt is combined with a strict instrumental guard that excludes vocals, speech, rap, choir, chants, voice samples, artist imitation, and recognisable copyrighted melodies.
+
+## Progress and outputs
+
+During generation the CLI shows:
+
+- the current stage;
+- percentage when the backend exposes reliable progress;
+- current segment or diffusion step;
+- elapsed time;
+- backend log lines;
+- final audio and video paths.
+
+Another terminal or an agent can read the same state:
+
+```bash
+watch -n 2 './music-video status'
+./music-video status --json
+```
+
+Runtime directories are created automatically and ignored by Git:
+
+```text
+assets/images/                 local input images
+assets/music/<backend>/<genre>/ generated audio
+output/                        generated MP4 files
+tmp/                           progress, logs, and temporary renders
+metadata/                      local build and rights notes
+models/ and .models/           model weights and third-party checkouts
+```
+
+For `--video`, place at least one `.jpg`, `.jpeg`, `.png`, or `.webp` file in `assets/images`, or run the reviewed Pexels workflow described below.
+
+## Backends and LLMs
+
+The CLI is an orchestrator. Model code and weights are installed locally and are never committed to this repository.
+
+### [facebookresearch / AudioCraft (MusicGen)](https://github.com/facebookresearch/audiocraft)
+
+MusicGen is the simplest included setup path. Its code and weights have different licenses; the `facebook/musicgen-small` weights are CC-BY-NC 4.0, so this backend is always labelled `NON_COMMERCIAL_DEMO`.
+
+```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -r requirements-musicgen.txt
 
-cp .env.example .env
-set -a
-source .env
-set +a
-
-./scripts/check_dependencies.sh
-.venv/bin/python scripts/search_pexels_images.py
-.venv/bin/python scripts/generate_music.py
-./scripts/render_visual_loop.sh
-REENCODE_VIDEO=1 ./scripts/build_video.sh
+./music-video generate --backend musicgen --genre lofi --duration 60
 ```
 
-Перед скачиванием Pexels-изображений скрипт показывает кандидатов и ждёт точную строку `DOWNLOAD`. Перед скачиванием MusicGen он показывает объём и лицензионную границу и ждёт `DOWNLOAD_MODEL`. Настоящий `.env` не коммитьте.
+The first model download requires typing `DOWNLOAD_MODEL` in the underlying generator. MusicGen keeps its own explicit confirmation flow.
 
-## Другие генераторы
+### [ACE-Step / ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5)
 
-Код содержит адаптеры для трёх внешних генераторов. Их исходный код и веса не входят в репозиторий.
-
-### ACE-Step
-
-Ожидаемая локальная структура:
+Expected local layout for the currently included adapter:
 
 ```text
-ace-step-v1/.venv/          # окружение с пакетом acestep
-models/ace-step/            # checkpoint
+ace-step-v1/.venv/bin/python
+models/ace-step/
 ```
-
-После установки выбранной совместимой версии ACE-Step и загрузки checkpoint:
 
 ```bash
-ACE_DEVICE=cpu ./scripts/run_ace_step_music.sh --duration 60 --seed 20260725
+ACE_DEVICE=cpu ./music-video generate \
+  --backend ace-step \
+  --genre techno \
+  --duration 60
 ```
 
-CPU-режим является безопасным значением для Mac с 16 ГБ unified memory, где MPS-путь может зависать. Проверьте актуальную лицензию конкретного checkpoint и каждый результат до публикации.
+The adapter targets the locally tested ACE-Step interface. New ACE-Step releases may require an adapter update; run `./music-video doctor` before generation.
 
-### DiffRhythm 2
+### [ASLP-lab / DiffRhythm](https://github.com/ASLP-lab/DiffRhythm)
 
-Ожидаемая локальная структура:
+### [ASLP-lab / DiffRhythm2](https://github.com/ASLP-lab/DiffRhythm2)
+
+The included adapter currently expects DiffRhythm 2:
 
 ```text
 .models/DiffRhythm2/inference.py
 .venv-diffrhythm2/bin/python
 ```
 
-Пример одного запуска через проектный адаптер:
-
 ```bash
-.venv-diffrhythm2/bin/python scripts/generate_music_diffrhythm2.py \
-  --duration 180 \
-  --variant rainy-cafe \
-  --output assets/music/diffrhythm2/track-01.mp3
+./music-video generate \
+  --backend diffrhythm2 \
+  --genre jazz \
+  --duration 180
 ```
 
-Для часового плейлиста:
+Instrumental mode is requested both through the style prompt and an `[inst]` lyric structure. Always listen to the result because a text constraint cannot guarantee that a generative model never produces vocal-like audio.
 
-```bash
-TRACK_COUNT=12 BASE_SECONDS=180 TRACK_SECONDS=303 \
-  ./scripts/render_diffrhythm2_playlist.sh
+The CLI enables Hugging Face offline mode by default for this backend. Add `--allow-downloads` only after reviewing the expected model and size.
+
+### [Stability-AI / stable-audio-3](https://github.com/Stability-AI/stable-audio-3)
+
+### [Stability-AI / stable-audio-tools](https://github.com/Stability-AI/stable-audio-tools)
+
+Expected local environment:
+
+```text
+.venv-stable-audio3/bin/python
 ```
 
-### Stable Audio 3
-
-Ожидается отдельное окружение `.venv-stable-audio3` с доступным импортом `stable_audio_3` и локально установленной выбранной версией модели.
-
 ```bash
-.venv-stable-audio3/bin/python scripts/generate_music_stable_audio3.py \
-  --album-style rainy-cafe \
-  --track-index 1 \
-  --output assets/music/stable-audio3/track-01.mp3
+./music-video generate \
+  --backend stable-audio3 \
+  --genre ambient \
+  --duration 120
 ```
 
-Очередь десяти часовых альбомов:
+The current one-track adapter limits a run to 234 seconds. Longer albums are assembled by the existing queue scripts.
 
-```bash
-ALBUM_COUNT=10 TRACK_COUNT=15 ./scripts/render_stable_audio3_albums.sh
+The CLI enables Hugging Face offline mode by default for this backend. Add `--allow-downloads` only after reviewing the expected model and size.
+
+## Working with an LLM
+
+An LLM should produce a style prompt, not executable code or credentials. Keep the selected genre as a stable category and pass the detailed prompt through `--prompt`.
+
+Recommended prompt contract:
+
+```text
+Create one concise English music-generation prompt.
+The output must be purely instrumental: no vocals, speech, rap, choir,
+chants, vocal chops, or voice samples. Do not imitate artists or quote
+recognisable melodies. Include genre, BPM range, instrumentation, mood,
+rhythm, arrangement, and mix characteristics.
 ```
 
-## Локальная страница статуса
+Inspect the generated command before spending model time:
 
 ```bash
-STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
+./music-video generate --backend ace-step --genre electronic \
+  --prompt "<LLM prompt>" --duration 60 --dry-run
 ```
 
-Откройте `http://<IP-компьютера>:8765` в той же локальной сети. Сервер показывает прогресс и отдаёт только готовые аудио/видео из локальных каталогов с поддержкой HTTP Range. Не публикуйте этот порт в интернет без отдельной аутентификации и reverse proxy.
+## Working with a coding agent
 
-## Postiz: приватные черновики YouTube
+Use this safe sequence for Codex, Claude Code, or another local agent:
 
-Скрипт использует интеграцию, заданную в `scripts/postiz_upload_ready_videos.py`, и берёт секрет только из `POSTIZ_API_KEY`:
+1. run `./music-video doctor --json`;
+2. run `./music-video genres --json`;
+3. select a backend that reports `ready: true`;
+4. construct and show a `--dry-run` command;
+5. obtain user approval before any model or media download;
+6. run one bounded generation job;
+7. poll `./music-video status --json` instead of guessing progress;
+8. verify the resulting file with `ffprobe` and human listening/review;
+9. never commit `.env`, media, models, checkpoints, logs, or generated output;
+10. never upload or publish unless the user explicitly requests it.
+
+Copy-ready agent request:
+
+```text
+In this repository, run ./music-video doctor --json and genres --json.
+Prepare a 60-second instrumental <genre> generation using <backend>.
+Show the dry-run command first. Do not download models/media, upload files,
+or publish anything without my explicit approval. During execution, report
+the exact status from ./music-video status --json and verify the output.
+```
+
+## Images and video
+
+Use your own cleared images by placing them in `assets/images`, or search Pexels candidates:
 
 ```bash
-export POSTIZ_API_KEY='your_key'
-export POSTIZ_LOCAL_BASE_URL='http://your-lan-host:8765'
+export PEXELS_API_KEY='your_key'
+.venv/bin/python scripts/search_pexels_images.py
+```
+
+The script shows candidates first and downloads only after the exact confirmation `DOWNLOAD`. Pexels content remains subject to Pexels terms and human rights review.
+
+With images ready:
+
+```bash
+./music-video generate --backend ace-step --genre synthwave --duration 90 --video
+```
+
+The CLI creates a temporary visual loop and uses a full H.264 re-encode for the final MP4.
+
+## Postiz and private YouTube drafts
+
+The uploader reads all account-specific values from environment variables. No integration ID or API key is stored in source code.
+
+```bash
+cp .env.example .env
+```
+
+Edit the local `.env`:
+
+```dotenv
+POSTIZ_API_KEY=your_real_key
+POSTIZ_INTEGRATION_ID=your_youtube_integration_id
+POSTIZ_API_ROOT=https://api.postiz.com/public/v1
+POSTIZ_VIDEO_ROOT=output
+# Optional; leave blank unless POSTIZ_VIDEO_ROOT is available through this server.
+POSTIZ_LOCAL_BASE_URL=
+```
+
+Load it and create private drafts for new MP4 files:
+
+```bash
+set -a
+source .env
+set +a
+
 python3 scripts/postiz_upload_ready_videos.py
 ```
 
-Режим наблюдения:
+Watch for newly completed videos:
 
 ```bash
 python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 ```
 
-Перед запуском проверьте интеграцию, приватность канала и каждый подготовленный материал. Скрипт создаёт приватные draft-записи, но не заменяет ручную проверку прав и содержания.
+The script requests a top-level Postiz draft and private YouTube visibility. It stores local idempotency state in `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` is optional and is added to the draft only when explicitly configured. A draft is not proof that upload succeeded: verify the returned post ID and review the item in Postiz before any manual publication.
 
-## Проверка перед коммитом
+## LAN status page
+
+The existing Stable Audio album queue can expose its detailed status page:
 
 ```bash
-python3 -m compileall -q scripts
-for file in scripts/*.sh; do bash -n "$file"; done
-git status --short
-git ls-files | rg '\.(mp4|mov|mkv|wav|mp3|flac|jpg|jpeg|png|webp)$' && exit 1 || true
+STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
 ```
+
+Open `http://<computer-ip>:8765` from the same local network. Do not expose this unauthenticated development server directly to the internet.
+
+## Low-level scripts
+
+The CLI is the recommended entry point. The original scripts remain available for album queues and manual control:
+
+```bash
+./scripts/check_dependencies.sh
+./scripts/render_diffrhythm2_playlist.sh
+./scripts/render_diffrhythm2_albums.sh
+./scripts/render_stable_audio3_albums.sh
+./scripts/render_one_hour_album.sh
+```
+
+## Development and verification
+
+```bash
+python3 -m unittest discover -s tests -v
+python3 -m compileall -q music_video_cli.py scripts tests
+for file in music-video scripts/*.sh; do bash -n "$file"; done
+git diff --check
+```
+
+Before a contribution:
+
+- keep the CLI code-only and dependency-light;
+- add or update tests for behavior changes;
+- do not add generated media, model files, third-party checkouts, or credentials;
+- preserve the PolyForm required notice;
+- document third-party license boundaries honestly.

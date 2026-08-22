@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+IMAGE_DIR="${IMAGE_DIR_OVERRIDE:-$ROOT/assets/images}"
 OUT="${VISUAL_OUT:-$ROOT/assets/visual-loop.mp4}"
 PROFILE="${VISUAL_PROFILE:-calm}"
 FORCE=0
@@ -10,8 +11,8 @@ if [ -e "$OUT" ] && [ "$FORCE" -ne 1 ]; then echo "Refusing to overwrite $OUT. R
 IMAGES=()
 while IFS= read -r image; do
   IMAGES+=("$image")
-done < <(find "$ROOT/assets/images" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) | sort)
-if [ "${#IMAGES[@]}" -lt 1 ]; then echo "No images found in assets/images. Run search_pexels_images.py first."; exit 1; fi
+done < <(find "$IMAGE_DIR" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \) | sort)
+if [ "${#IMAGES[@]}" -lt 1 ]; then echo "No images found in $IMAGE_DIR. Run search_pexels_images.py first."; exit 1; fi
 
 mkdir -p "$ROOT/assets"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/agent-pepe-lofi.XXXXXX")"
