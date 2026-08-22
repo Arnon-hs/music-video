@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import threading
 import unittest
+import json
 import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
@@ -72,6 +73,42 @@ class StatusServerTests(unittest.TestCase):
             self.assertEqual(response.status, 206)
             self.assertEqual(response.headers["Content-Range"], "bytes 6-9/10")
             self.assertEqual(response.read(), b"6789")
+
+    def test_status_reports_current_media_and_private_postiz_draft(self) -> None:
+        root = Path(self.temporary.name)
+        status = root / "status.txt"
+        cli_log = root / "cli.log"
+        postiz_state = root / "postiz.json"
+        postiz_log = root / "postiz.log"
+        audio = self.music / "ace-step" / "lofi" / "track.wav"
+        video = self.output / "playlist.mp4"
+        audio.parent.mkdir(parents=True)
+        audio.write_bytes(b"audio")
+        video.write_bytes(b"video")
+        status.write_text(
+            "state=complete\nrun_id=test-run\ncli_pid=999999\n"
+            f"audio={audio}\nvideo={video}\n",
+            encoding="utf-8",
+        )
+        cli_log.write_text("generation complete\n", encoding="utf-8")
+        postiz_state.write_text(
+            json.dumps({"playlist.mp4": {"post_id": "post-123"}}),
+            encoding="utf-8",
+        )
+        postiz_log.write_text("draft created for playlist.mp4: post_id=post-123\n", encoding="utf-8")
+        with (
+            mock.patch.object(status_server, "STATUS", status),
+            mock.patch.object(status_server, "CLI_LOG", cli_log),
+            mock.patch.object(status_server, "POSTIZ_STATE", postiz_state),
+            mock.patch.object(status_server, "POSTIZ_LOG", postiz_log),
+            mock.patch.object(status_server, "probe_duration", return_value=60.0),
+        ):
+            payload = status_server.read_status()
+        self.assertEqual(payload["audio_files"], 1)
+        self.assertEqual(payload["video_files"], 1)
+        self.assertEqual(payload["publication"]["summary"], "private_drafts_created")
+        self.assertEqual(payload["publication"]["items"][0]["post_id"], "post-123")
+        self.assertEqual(payload["log_tail"], "generation complete")
 
 
 if __name__ == "__main__":

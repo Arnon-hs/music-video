@@ -26,6 +26,8 @@ Use `./music-video playlist` with an explicit backend, genre, and image. The CLI
 ## Monitor and verify
 
 - Read `./music-video status --json`; do not estimate progress from elapsed time.
+- When a browser/phone view is useful, run `./music-video web` on loopback. It is the read-only dashboard for current CLI status, logs, validated media previews, and Postiz draft state.
+- Configure `tailscale serve --bg localhost:8765` only when the user explicitly requests tailnet access. Never use Tailscale Funnel for this dashboard or expose it directly to the public internet.
 - Validate every final artifact with `ffprobe` for duration and streams.
 - Ask for human listening and visual review before calling the result ready.
 - Keep generated media, model weights, logs, `.env`, and credentials out of Git.

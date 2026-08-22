@@ -23,6 +23,7 @@ from typing import Sequence
 ROOT = Path(__file__).resolve().parent
 GENRES_PATH = ROOT / "config" / "genres.json"
 STATUS_PATH = ROOT / "tmp" / "render-progress.txt"
+RUN_LOG_PATH = ROOT / "tmp" / "music-video-cli.log"
 
 BACKENDS = {
     "musicgen": "MusicGen (NON_COMMERCIAL_DEMO)",
@@ -358,7 +359,34 @@ def read_status() -> dict[str, str]:
 
 def write_status(**values: object) -> None:
     STATUS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    STATUS_PATH.write_text("".join(f"{key}={value}\n" for key, value in values.items()), encoding="utf-8")
+    temporary = STATUS_PATH.with_suffix(".tmp")
+    temporary.write_text("".join(f"{key}={value}\n" for key, value in values.items()), encoding="utf-8")
+    temporary.replace(STATUS_PATH)
+
+
+def new_run_context(mode: str, **values: object) -> dict[str, object]:
+    started_at = int(time.time())
+    return {
+        "run_id": f"{datetime.now().strftime('%Y%m%d-%H%M%S')}-{os.getpid()}",
+        "run_started_at": started_at,
+        "cli_pid": os.getpid(),
+        "mode": mode,
+        **values,
+    }
+
+
+def reset_run_log(summary: str) -> None:
+    RUN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    RUN_LOG_PATH.write_text(
+        f"{datetime.now().isoformat(timespec='seconds')} START {summary}\n",
+        encoding="utf-8",
+    )
+
+
+def append_run_log(message: str) -> None:
+    RUN_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with RUN_LOG_PATH.open("a", encoding="utf-8") as stream:
+        stream.write(message.rstrip("\n") + "\n")
 
 
 def progress_text(stage: str, started_at: float) -> str:
@@ -376,6 +404,7 @@ def run_process(
 ) -> int:
     context = status_context or {}
     write_status(state="starting", stage=stage, music_percent=0, **context)
+    append_run_log(f"\n--- {stage} ---")
     process = subprocess.Popen(
         list(command), cwd=ROOT, env=environment, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1,
@@ -407,6 +436,7 @@ def run_process(
                 if sys.stdout.isatty():
                     print("\r\033[K", end="")
                 print(line.rstrip())
+                append_run_log(line)
             current = progress_text(stage, started_at)
             if context:
                 status = read_status()
@@ -422,7 +452,8 @@ def run_process(
     except KeyboardInterrupt:
         process.terminate()
         process.wait(timeout=10)
-        write_status(state="cancelled", stage=stage)
+        write_status(state="cancelled", stage=stage, **context)
+        append_run_log(f"Cancelled: {stage}")
         print("\nCancelled")
         return 130
     finally:
@@ -431,8 +462,11 @@ def run_process(
     code = process.wait()
     if code == 0:
         print(f"✓ {stage} complete")
+        append_run_log(f"✓ {stage} complete")
     else:
         print(f"✗ {stage} failed with exit code {code}")
+        append_run_log(f"✗ {stage} failed with exit code {code}")
+        write_status(state="blocked", stage=stage, error=f"exit code {code}", **context)
     return code
 
 
@@ -473,7 +507,10 @@ def print_doctor(as_json: bool = False) -> None:
         print(f"  {'✓' if ready else '·'} {slug:<16} {title} — {state}")
 
 
-def render_video(audio: Path, genre: str, backend: str, environment: dict[str, str]) -> Path:
+def render_video(
+    audio: Path, genre: str, backend: str, environment: dict[str, str],
+    status_context: dict[str, object] | None = None,
+) -> Path:
     images = ROOT / "assets" / "images"
     if not images.exists() or not any(path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"} for path in images.iterdir()):
         raise ValueError("No local images in assets/images. Add images or run scripts/search_pexels_images.py first")
@@ -484,7 +521,10 @@ def render_video(audio: Path, genre: str, backend: str, environment: dict[str, s
         "VISUAL_OUT": str(visual),
         "VISUAL_PROFILE": "energetic" if genre in {"techno", "electronic", "house", "synthwave", "drum-and-bass"} else "calm",
     }
-    if run_process([str(ROOT / "scripts" / "render_visual_loop.sh"), "--force"], visual_env, "Visual loop") != 0:
+    if run_process(
+        [str(ROOT / "scripts" / "render_visual_loop.sh"), "--force"], visual_env,
+        "Visual loop", status_context,
+    ) != 0:
         raise RuntimeError("Visual loop failed")
     label = "NON_COMMERCIAL_DEMO" if backend == "musicgen" else "RIGHTS_REVIEW_REQUIRED"
     build_env = environment | {
@@ -492,7 +532,10 @@ def render_video(audio: Path, genre: str, backend: str, environment: dict[str, s
         "REENCODE_VIDEO": "1", "OUTPUT_LABEL": label,
         "MUSIC_LICENSE_NOTE": "Check the selected model, checkpoint, generated output, and media rights before publication.",
     }
-    if run_process([str(ROOT / "scripts" / "build_video.sh")], build_env, "Final video") != 0:
+    if run_process(
+        [str(ROOT / "scripts" / "build_video.sh")], build_env,
+        "Final video", status_context,
+    ) != 0:
         raise RuntimeError("Video build failed")
     return video
 
@@ -526,18 +569,29 @@ def run_generate(args: argparse.Namespace) -> int:
     if not args.allow_downloads and args.backend in {"diffrhythm2", "stable-audio3"}:
         generation.environment["HF_HUB_OFFLINE"] = "1"
         generation.environment["TRANSFORMERS_OFFLINE"] = "1"
-    code = run_process(generation.command, generation.environment, f"Generate {genre} with {args.backend}")
+    run_context = new_run_context(
+        "generate", genre=genre, backend=args.backend, duration=args.duration,
+        audio=generation.audio_path, wants_video=str(bool(args.video)).lower(),
+    )
+    reset_run_log(f"generate backend={args.backend} genre={genre} duration={args.duration}s video={args.video}")
+    code = run_process(
+        generation.command, generation.environment, f"Generate {genre} with {args.backend}",
+        run_context,
+    )
     if code != 0:
         return code
-    write_status(state="music_complete", music_percent=100, genre=genre, backend=args.backend, audio=generation.audio_path)
+    write_status(state="music_complete", music_percent=100, **run_context)
     print(f"Audio: {generation.audio_path}")
     if args.video:
         try:
-            video = render_video(generation.audio_path, genre, args.backend, generation.environment)
+            video = render_video(
+                generation.audio_path, genre, args.backend, generation.environment, run_context,
+            )
         except (ValueError, RuntimeError) as error:
             print(f"Error: {error}", file=sys.stderr)
+            write_status(state="blocked", error=error, **run_context)
             return 1
-        write_status(state="complete", percent=100, genre=genre, backend=args.backend, audio=generation.audio_path, video=video)
+        write_status(state="complete", percent=100, video=video, **run_context)
         print(f"Video: {video}")
     return 0
 
@@ -560,8 +614,9 @@ def print_playlist_plan(plan: PlaylistPlan) -> None:
     print(f"\nRender: {shlex.join(playlist_ffmpeg_command(plan))}")
 
 
-def run_playlist_render(plan: PlaylistPlan) -> int:
+def run_playlist_render(plan: PlaylistPlan, status_context: dict[str, object]) -> int:
     plan.video_path.parent.mkdir(parents=True, exist_ok=True)
+    append_run_log("\n--- Render one-hour playlist video ---")
     process = subprocess.Popen(
         playlist_ffmpeg_command(plan), cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         text=True, bufsize=1,
@@ -580,9 +635,8 @@ def run_playlist_render(plan: PlaylistPlan) -> int:
                 percent = min(99, int(seconds * 100 / PLAYLIST_SECONDS))
                 if percent != last_percent:
                     write_status(
-                        state="rendering_playlist_video", percent=percent, genre=plan.genre,
-                        backend=plan.backend, tracks=len(plan.tracks), image=plan.image_path,
-                        video=plan.video_path,
+                        state="rendering_playlist_video", percent=percent,
+                        tracks=len(plan.tracks), **status_context,
                     )
                     elapsed = int(time.monotonic() - started_at)
                     if sys.stdout.isatty():
@@ -594,10 +648,12 @@ def run_playlist_render(plan: PlaylistPlan) -> int:
                 if sys.stdout.isatty():
                     print("\r\033[K", end="")
                 print(line)
+                append_run_log(line)
     except KeyboardInterrupt:
         process.terminate()
         process.wait(timeout=10)
-        write_status(state="cancelled", stage="playlist video")
+        write_status(state="cancelled", stage="playlist video", **status_context)
+        append_run_log("Cancelled: playlist video")
         print("\nCancelled")
         return 130
     finally:
@@ -606,8 +662,11 @@ def run_playlist_render(plan: PlaylistPlan) -> int:
     code = process.wait()
     if code == 0:
         print("✓ One-hour playlist video complete")
+        append_run_log("✓ One-hour playlist video complete")
     else:
         print(f"✗ Playlist video failed with exit code {code}")
+        append_run_log(f"✗ Playlist video failed with exit code {code}")
+        write_status(state="blocked", stage="playlist video", error=f"exit code {code}", **status_context)
     return code
 
 
@@ -640,6 +699,14 @@ def run_playlist(args: argparse.Namespace) -> int:
         f"Starting one-hour playlist: {BACKENDS[plan.backend]} · {plan.genre} · "
         f"{len(plan.tracks)} varied tracks · image={plan.image_path.name}"
     )
+    run_context = new_run_context(
+        "playlist", genre=plan.genre, backend=plan.backend, playlist_total=len(plan.tracks),
+        image=plan.image_path, video=plan.video_path, duration=PLAYLIST_SECONDS,
+        audio_paths="|".join(str(track.audio_path) for track in plan.tracks),
+    )
+    reset_run_log(
+        f"playlist backend={plan.backend} genre={plan.genre} tracks={len(plan.tracks)} duration={PLAYLIST_SECONDS}s"
+    )
     for index, generation in enumerate(plan.tracks, 1):
         duration = int(generation.command[generation.command.index("--duration") + 1])
         existing_duration = probe_duration(generation.audio_path) if generation.audio_path.is_file() else None
@@ -657,6 +724,7 @@ def run_playlist(args: argparse.Namespace) -> int:
                 generation.command, generation.environment,
                 f"Track {index:02d}/{len(plan.tracks)} · {duration}s · {plan.genre}",
                 {
+                    **run_context,
                     "playlist_track": index, "playlist_total": len(plan.tracks),
                     "track_duration": duration, "genre": plan.genre, "backend": plan.backend,
                     "image": plan.image_path,
@@ -666,37 +734,35 @@ def run_playlist(args: argparse.Namespace) -> int:
                 return code
             actual_duration = probe_duration(generation.audio_path)
             if actual_duration is None or not duration - 1 <= actual_duration <= duration + 2:
-                print(
+                error = (
                     f"Generated track failed duration validation: {generation.audio_path} "
-                    f"(expected about {duration}s, got {actual_duration})",
-                    file=sys.stderr,
+                    f"(expected about {duration}s, got {actual_duration})"
                 )
+                print(error, file=sys.stderr)
+                append_run_log(error)
+                write_status(state="blocked", error=error, **run_context)
                 return 1
         write_status(
             state="generating_playlist_music", playlist_track=index,
             playlist_completed=index, playlist_total=len(plan.tracks), music_percent=100,
-            genre=plan.genre, backend=plan.backend, image=plan.image_path,
+            **run_context,
         )
 
     write_status(
-        state="rendering_playlist_video", percent=0, genre=plan.genre,
-        backend=plan.backend, tracks=len(plan.tracks), image=plan.image_path,
-        video=plan.video_path,
+        state="rendering_playlist_video", percent=0, tracks=len(plan.tracks), **run_context,
     )
-    code = run_playlist_render(plan)
+    code = run_playlist_render(plan, run_context)
     if code != 0:
         return code
     video_duration = probe_duration(plan.video_path)
     if video_duration is None or not PLAYLIST_SECONDS - 1 <= video_duration <= PLAYLIST_SECONDS + 1:
-        print(
-            f"Final video failed duration validation: expected {PLAYLIST_SECONDS}s, got {video_duration}",
-            file=sys.stderr,
-        )
+        error = f"Final video failed duration validation: expected {PLAYLIST_SECONDS}s, got {video_duration}"
+        print(error, file=sys.stderr)
+        append_run_log(error)
+        write_status(state="blocked", error=error, **run_context)
         return 1
     write_status(
-        state="complete", percent=100, genre=plan.genre, backend=plan.backend,
-        tracks=len(plan.tracks), image=plan.image_path, video=plan.video_path,
-        duration=PLAYLIST_SECONDS,
+        state="complete", percent=100, tracks=len(plan.tracks), **run_context,
     )
     print(f"Video: {plan.video_path}")
     print("Next: review the complete video, then use the existing Postiz dry-run before creating a private draft.")
@@ -768,6 +834,16 @@ def interactive() -> int:
     ))
 
 
+def run_web(host: str, port: int) -> int:
+    from scripts.status_server import serve
+
+    try:
+        serve(host, port)
+    except KeyboardInterrupt:
+        print("\nDashboard stopped")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate instrumental music and optional video")
     subparsers = parser.add_subparsers(dest="command")
@@ -777,6 +853,9 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser.add_argument("--json", action="store_true")
     status_parser = subparsers.add_parser("status", help="show the last/current generation status")
     status_parser.add_argument("--json", action="store_true")
+    web_parser = subparsers.add_parser("web", help="open the web dashboard for CLI progress and previews")
+    web_parser.add_argument("--host", default="127.0.0.1", help="listen address; keep loopback for Tailscale Serve")
+    web_parser.add_argument("--port", type=int, default=8765, help="listen port, default: 8765")
     generate = subparsers.add_parser("generate", help="generate music and optionally build a video")
     generate.add_argument("--backend", choices=BACKENDS, default="musicgen")
     generate.add_argument("--genre", default="lofi")
@@ -829,6 +908,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         for key, value in status.items():
             print(f"{key}: {value}")
         return 0
+    if args.command == "web":
+        if not 1 <= args.port <= 65535:
+            parser.error("web --port must be between 1 and 65535")
+        return run_web(args.host, args.port)
     if args.command == "playlist":
         return run_playlist(args)
     return run_generate(args)

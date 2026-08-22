@@ -5,6 +5,7 @@ import subprocess
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,6 +32,11 @@ class GenreTests(unittest.TestCase):
 
 
 class CommandTests(unittest.TestCase):
+    def test_web_command_starts_dashboard_with_requested_address(self) -> None:
+        with mock.patch.object(cli, "run_web", return_value=0) as run_web:
+            self.assertEqual(cli.main(["web", "--host", "127.0.0.1", "--port", "9876"]), 0)
+        run_web.assert_called_once_with("127.0.0.1", 9876)
+
     def test_backend_commands_receive_genre_prompt(self) -> None:
         for backend in cli.BACKENDS:
             duration = 180 if backend == "diffrhythm2" else 60

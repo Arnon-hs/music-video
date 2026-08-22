@@ -48,6 +48,7 @@ Dry-run показывает prompt, путь результата и точну
 | сделать один трек | `./music-video generate ...` | WAV или MP3 в `assets/music` |
 | добавить обложку | добавить `--video`, картинку положить в `assets/images` | MP4 в `output` |
 | собрать часовую подборку | `./music-video playlist ...` | разные треки одного жанра и MP4 ровно на 3600 секунд |
+| наблюдать с телефона или браузера | `./music-video web` | живой прогресс CLI, логи, preview и статус Postiz draft |
 | поручить работу агенту | используйте prompt и skill ниже | ограниченный и наблюдаемый процесс |
 | подготовить YouTube-загрузку | сначала Postiz `--dry-run` | приватный черновик для ручной проверки |
 
@@ -147,6 +148,7 @@ Copyright 2026 Vasilii Bereznikov.
 ./music-video doctor --json
 ./music-video status
 ./music-video status --json
+./music-video web
 ```
 
 Техно через ACE-Step:
@@ -479,15 +481,61 @@ python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 
 `--dry-run` показывает ожидающие видео без credentials и обращения к Postiz. Реальный запуск запрашивает top-level draft и приватную видимость YouTube, а idempotency state хранит в `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` необязателен и попадает в черновик только при явной настройке. API должен использовать HTTPS; HTTP разрешён только для loopback, если явно не установлен `POSTIZ_ALLOW_INSECURE_HTTP=1` после проверки сетевого риска. После ответа обязательно проверьте post ID и сам черновик в Postiz до ручной публикации.
 
-## Необязательно: просмотр с другого устройства
+## Web dashboard для CLI
 
-По умолчанию сервер слушает только `127.0.0.1`. Для явного доступа к существующей очереди Stable Audio из доверенной локальной сети:
+Dashboard теперь служит read-only web-мордой текущего CLI. Он следит за командами `generate` и `playlist`, запущенными из этого checkout, и показывает:
+
+- run ID, активность CLI-процесса, backend, жанр, этап, процент, номер трека и прошедшее время;
+- единый актуальный CLI log вместо старого жёстко заданного лога очереди Stable Audio;
+- только проверенные аудио и видео текущего запуска, с HTTP Range preview на телефоне;
+- состояние каждого готового видео в Postiz: ожидает проверки, загружается или создан приватный draft с подтверждённым post ID.
+
+Страница сама не запускает генерацию, не скачивает модели, не отменяет процесс, не загружает файлы и ничего не публикует. Источником управления остаётся CLI, а браузер отвечает за статус и предпросмотр.
+
+### Локальный запуск
+
+Терминал 1:
 
 ```bash
-STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
+./music-video web
 ```
 
-Откройте `http://<IP-компьютера>:8765` в той же сети. Не публикуйте этот сервер в интернет без отдельной аутентификации.
+Откройте `http://127.0.0.1:8765`. Оставьте dashboard запущенным, а задачу начните в Терминале 2:
+
+```bash
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg
+```
+
+Страница обновляется каждые две секунды. Те же данные доступны в JSON по адресу `http://127.0.0.1:8765/status.json` и через `./music-video status --json`.
+
+### Приватный доступ через Tailscale
+
+Оставьте dashboard на loopback и проксируйте его только внутри своего tailnet через Tailscale Serve:
+
+```bash
+tailscale status
+tailscale serve --bg localhost:8765
+tailscale serve status
+```
+
+Откройте HTTPS-адрес, который покажет Tailscale, на телефоне или другом устройстве tailnet. После работы отключите доступ:
+
+```bash
+tailscale serve off
+```
+
+Используйте [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve), а не Funnel: Serve доступен только внутри tailnet, тогда как Funnel публикует сервис в открытый интернет. Доступ регулируется пользователями и ACL вашего tailnet. Страница показывает созданные медиа, prompt/log и Postiz post IDs, поэтому давайте доступ только нужным устройствам и людям.
+
+Для прямого доступа из доверенной локальной сети без Tailscale:
+
+```bash
+./music-video web --host 0.0.0.0 --port 8765
+```
+
+Откройте `http://<IP-компьютера>:8765`. У этого режима нет отдельного логина приложения: не делайте port forwarding на роутере и не выставляйте страницу напрямую в интернет.
 
 ## Для опытных: ручные скрипты очередей
 

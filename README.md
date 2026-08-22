@@ -50,6 +50,7 @@ The UI walks you through the result you want, genre, installed backend, duration
 | make one instrumental track | `./music-video generate ...` | WAV or MP3 in `assets/music` |
 | add artwork to a track | add `--video` and place an image in `assets/images` | MP4 in `output` |
 | build a one-hour mix | `./music-video playlist ...` | varied same-genre tracks plus a 3,600-second MP4 |
+| watch from a browser or phone | `./music-video web` | live CLI progress, logs, previews, and Postiz draft status |
 | let an agent operate the CLI | use the copy-ready request below | bounded, observable workflow |
 | prepare a YouTube upload | run the Postiz script with `--dry-run` first | private draft for human review |
 
@@ -151,6 +152,7 @@ Model code, weights, APIs, images, and generated outputs keep their own license 
 ./music-video doctor --json
 ./music-video status
 ./music-video status --json
+./music-video web
 ```
 
 Generate a 60-second techno track with ACE-Step:
@@ -518,15 +520,61 @@ python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 
 `--dry-run` lists pending videos without requiring credentials or contacting Postiz. The real run requests a top-level Postiz draft and private YouTube visibility. It stores local idempotency state in `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` is optional and is added to the draft only when explicitly configured. The API endpoint must use HTTPS; plain HTTP is accepted only on loopback unless `POSTIZ_ALLOW_INSECURE_HTTP=1` is deliberately set after reviewing the network risk. A draft is not proof that upload succeeded: verify the returned post ID and review the item in Postiz before any manual publication.
 
-## Optional: preview from another device
+## Use the web dashboard
 
-The existing Stable Audio album queue binds to `127.0.0.1` by default. To expose its detailed status page to a trusted LAN explicitly:
+The dashboard is now the read-only web face of the current CLI. It follows `generate` and `playlist` runs from the same checkout and displays:
+
+- the run ID, active CLI process, backend, genre, stage, percentage, track number, and elapsed time;
+- the current CLI log rather than a hard-coded Stable Audio queue log;
+- only validated audio/video files associated with the current run, with HTTP Range playback on phones;
+- Postiz status for each finished video: waiting for review, uploading, or private draft created with a returned post ID.
+
+It does not start generation, download models, upload files, cancel work, or publish anything. The CLI remains the control plane; the browser is its status and preview surface.
+
+### Start locally
+
+Terminal 1:
 
 ```bash
-STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
+./music-video web
 ```
 
-Open `http://<computer-ip>:8765` from the same local network. Do not expose this unauthenticated development server directly to the internet.
+Open `http://127.0.0.1:8765`. Keep the dashboard running and start the actual job in Terminal 2:
+
+```bash
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg
+```
+
+The page refreshes every two seconds. The same machine-readable state remains available at `http://127.0.0.1:8765/status.json` and through `./music-video status --json`.
+
+### Open it privately through Tailscale
+
+Keep the dashboard on loopback and let Tailscale Serve proxy it only inside your tailnet:
+
+```bash
+tailscale status
+tailscale serve --bg localhost:8765
+tailscale serve status
+```
+
+Open the HTTPS URL printed by Tailscale on your phone or another tailnet device. Stop sharing when finished:
+
+```bash
+tailscale serve off
+```
+
+Use [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve), not Funnel: Serve is tailnet-only, while Funnel exposes a service to the public internet. Tailnet access still follows your Tailscale users and ACLs. The dashboard exposes generated media, prompts/log output, and Postiz post IDs to allowed tailnet users, so keep access narrow.
+
+For a direct trusted-LAN connection without Tailscale:
+
+```bash
+./music-video web --host 0.0.0.0 --port 8765
+```
+
+Then open `http://<computer-ip>:8765`. This mode has no application login and must never be forwarded from the router or exposed directly to the internet.
 
 ## Advanced: manual queue scripts
 

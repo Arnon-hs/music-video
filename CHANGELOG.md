@@ -7,6 +7,7 @@ This file records user-visible repository changes. The project follows semantic 
 ### Added
 
 - One-hour playlist CLI workflow with varied same-genre tracks, resumable generation, crossfades, one fitted image, progress reporting, and final duration validation.
+- `./music-video web` read-only dashboard for current CLI progress, run metadata, logs, validated audio/video previews, and Postiz private-draft status.
 - Repository-scoped Codex skill plus an optional symlink installer for using the project from a Codex work session.
 - RunPod Pod, Vast.ai, and generic GPU VPS instructions, including persistent storage, SSH monitoring, artifact verification, and the current RunPod Serverless boundary.
 - Community contribution, conduct, support, and security policies.
@@ -18,6 +19,7 @@ This file records user-visible repository changes. The project follows semantic 
 
 - Reworked the English, Russian, and Simplified Chinese guides around a faster first dry-run, copy-ready agent requests, friendlier CLI recipes, realistic local/remote hardware expectations, and clearer benefits and limitations.
 - Added detailed computer and server requirements in all three guides, including Apple M1–M5 suitability, unified-memory tiers, disk budgets, NVIDIA VRAM/RAM profiles, backend-specific caveats, and environment-audit commands.
+- Replaced the legacy Stable Audio-only LAN page instructions with current CLI and Tailscale Serve workflows in English, Russian, and Simplified Chinese.
 - Removed the project-health/reference block from all three user guides.
 
 ### Security

@@ -27,6 +27,7 @@ ace-step-v1/
 # Generated and downloaded material
 assets/
 output/
+.playwright-cli/
 tmp/
 metadata/
 

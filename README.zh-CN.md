@@ -48,6 +48,7 @@ Dry-run 会显示 prompt、输出路径和实际命令，但不会加载模型�
 | 生成一首纯器乐曲目 | `./music-video generate ...` | `assets/music` 中的 WAV 或 MP3 |
 | 给曲目添加封面 | 加上 `--video`，图片放入 `assets/images` | `output` 中的 MP4 |
 | 制作一小时混音 | `./music-video playlist ...` | 同流派的多首不同曲目和 3600 秒 MP4 |
+| 从手机或浏览器查看 | `./music-video web` | 实时 CLI 进度、日志、预览和 Postiz draft 状态 |
 | 让 agent 操作 CLI | 使用下面的 prompt 和 skill | 有边界、可观察的工作流 |
 | 准备 YouTube 上传 | 先运行 Postiz `--dry-run` | 可供人工检查的私密草稿 |
 
@@ -146,6 +147,7 @@ Copyright 2026 Vasilii Bereznikov.
 ./music-video doctor --json
 ./music-video status
 ./music-video status --json
+./music-video web
 ```
 
 使用 ACE-Step 生成 techno：
@@ -478,15 +480,61 @@ python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 
 `--dry-run` 无需 credentials，也不会请求 Postiz，只会显示待处理的视频。真实运行会创建 top-level draft 并请求 YouTube 私密可见性，幂等状态保存在 `tmp/postiz-uploaded.json`。`POSTIZ_LOCAL_BASE_URL` 是可选项，只有明确配置后才会写入草稿。API 必须使用 HTTPS；仅在 loopback 场景中可使用 HTTP，或者在评估网络风险后明确设置 `POSTIZ_ALLOW_INSECURE_HTTP=1`。收到响应后，必须检查 post ID 和 Postiz 中的实际草稿，再手动发布。
 
-## 可选：从其他设备查看状态
+## CLI Web Dashboard
 
-服务器默认只监听 `127.0.0.1`。如需在可信局域网中明确访问现有 Stable Audio 队列：
+Dashboard 现在是当前 CLI 的只读 Web 界面。它跟踪同一 checkout 中运行的 `generate` 和 `playlist`，并显示：
+
+- run ID、CLI 进程状态、backend、流派、阶段、百分比、曲目编号和运行时间；
+- 当前统一的 CLI 日志，而不是旧的硬编码 Stable Audio 队列日志；
+- 只显示属于当前运行且已验证的音频/视频，并支持手机上的 HTTP Range 播放；
+- 每个成品视频的 Postiz 状态：等待检查、正在上传，或已创建带确认 post ID 的私密 draft。
+
+页面不会自行启动生成、下载模型、取消任务、上传文件或发布内容。CLI 仍然负责控制，浏览器只负责状态和预览。
+
+### 本机启动
+
+终端 1：
 
 ```bash
-STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
+./music-video web
 ```
 
-在同一网络中打开 `http://<计算机IP>:8765`。没有单独的身份验证时，请勿将此服务器暴露到互联网。
+打开 `http://127.0.0.1:8765`。保持 dashboard 运行，然后在终端 2 启动实际任务：
+
+```bash
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg
+```
+
+页面每两秒刷新一次。同样的机器可读状态可通过 `http://127.0.0.1:8765/status.json` 和 `./music-video status --json` 获取。
+
+### 通过 Tailscale 私密访问
+
+让 dashboard 保持监听 loopback，再用 Tailscale Serve 仅在 tailnet 内代理：
+
+```bash
+tailscale status
+tailscale serve --bg localhost:8765
+tailscale serve status
+```
+
+在手机或其他 tailnet 设备上打开 Tailscale 输出的 HTTPS 地址。完成后停止共享：
+
+```bash
+tailscale serve off
+```
+
+请使用 [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve)，不要使用 Funnel：Serve 仅限 tailnet，Funnel 会把服务暴露到公共互联网。访问仍受 tailnet 用户和 ACL 控制。页面会向获准用户显示生成媒体、prompt/log 和 Postiz post ID，因此请限制访问范围。
+
+如果不使用 Tailscale，只在可信局域网内直接访问：
+
+```bash
+./music-video web --host 0.0.0.0 --port 8765
+```
+
+打开 `http://<计算机IP>:8765`。此模式没有应用级登录；不要配置路由器端口转发，也不要直接暴露到互联网。
 
 ## 高级用法：手动队列脚本
 

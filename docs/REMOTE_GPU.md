@@ -120,19 +120,19 @@ scp -P <ssh-port> \
 
 Listen to and watch the complete result before Postiz or YouTube. Back up anything important, then stop the GPU compute; confirm separately which provider storage survives stop versus destroy.
 
-## Keep the status page private
+## Keep the CLI dashboard private
 
-Do not expose the unauthenticated status server directly to the internet. Keep it on loopback and use an SSH tunnel:
+The web page is a read-only dashboard for the same CLI running on the remote machine. It shows current progress, CLI logs, playable audio/video previews, and the verified Postiz private-draft state. Start it on loopback and use an SSH tunnel; do not expose it directly to the internet:
 
 ```bash
 # On the remote GPU machine
-STATUS_HOST=127.0.0.1 STATUS_PORT=8765 python3 scripts/status_server.py
+./music-video web
 
 # On your local machine
 ssh -L 8765:127.0.0.1:8765 -p <ssh-port> root@<ssh-host>
 ```
 
-Open `http://127.0.0.1:8765` locally.
+Open `http://127.0.0.1:8765` locally, then run `./music-video generate ...` or `./music-video playlist ...` in a second remote terminal. The page follows the current CLI job automatically.
 
 ## What an API version would still need
 
