@@ -2,5 +2,5 @@ numpy==1.26.4
 PyYAML==6.0.2
 safetensors>=0.4.5
 soundfile==0.12.1
-torch==2.5.1
+torch==2.13.0
 transformers==4.44.2
