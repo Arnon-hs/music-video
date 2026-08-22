@@ -10,6 +10,8 @@ This file records user-visible repository changes. The project follows semantic 
 - `./music-video web` read-only dashboard for current CLI progress, run metadata, logs, validated audio/video previews, and Postiz private-draft status.
 - English-first dashboard interface with a persistent English, Russian, and Simplified Chinese language switcher.
 - Dashboard and CLI example screenshots embedded in all three startup guides.
+- AtlasRepo-branded README header with website, forum, YouTube, and community solution links.
+- Copy-ready Russian task for publishing the repository as a durable AtlasRepo solution.
 - Repository-scoped Codex skill plus an optional symlink installer for using the project from a Codex work session.
 - RunPod Pod, Vast.ai, and generic GPU VPS instructions, including persistent storage, SSH monitoring, artifact verification, and the current RunPod Serverless boundary.
 - Community contribution, conduct, support, and security policies.

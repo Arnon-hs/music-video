@@ -1,8 +1,33 @@
-# Music Video Generator
+<div align="center">
+  <a href="https://atlasrepo.com/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/images/atlasrepo-logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="docs/images/atlasrepo-logo.svg">
+      <img alt="AtlasRepo" src="docs/images/atlasrepo-logo.svg" width="320">
+    </picture>
+  </a>
 
-[English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
+  <h1>Music Video Generator</h1>
 
-Turn a music prompt into an instrumental track—or a full one-hour playlist video—without leaving your terminal. Pick a genre, choose a local model, watch real progress, and optionally turn the result into a private YouTube draft through Postiz.
+  <p><strong>Local-first instrumental music and one-hour playlist videos, operated from one CLI and monitored in a browser.</strong></p>
+
+  <p>
+    <a href="https://atlasrepo.com/">Website</a> ·
+    <a href="https://forum.atlasrepo.com/">Forum</a> ·
+    <a href="https://www.youtube.com/@ATLASREPO">Videos &amp; demos</a> ·
+    <a href="https://github.com/Arnon-hs/open-source/tree/main/solutions/music-video">Open-source solution</a>
+  </p>
+
+  <p>
+    <a href="https://github.com/Arnon-hs/music-video/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Arnon-hs/music-video/actions/workflows/ci.yml/badge.svg"></a>
+    <img alt="License: PolyForm Noncommercial 1.0.0" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-3155ff">
+    <img alt="CLI: Python" src="https://img.shields.io/badge/CLI-Python-3776AB?logo=python&amp;logoColor=white">
+  </p>
+
+  <p><a href="README.md">English</a> · <a href="README.ru.md">Русский</a> · <a href="README.zh-CN.md">简体中文</a></p>
+</div>
+
+Turn a music prompt into an instrumental track—or a full one-hour playlist video—without leaving your terminal. Pick a genre, choose a local model, watch real progress, and optionally turn the result into a private YouTube draft through Postiz. Watch project videos and published examples on the [AtlasRepo YouTube channel](https://www.youtube.com/@ATLASREPO).
 
 This is a code-only, local-first project. Your music, images, model weights, logs, virtual environments, and real API keys stay outside Git.
 
@@ -108,6 +133,8 @@ unlink ~/.agents/skills/music-video-generator
 See the [official OpenAI skill guide](https://developers.openai.com/codex/skills/) for discovery locations and invocation. A plugin is unnecessary for this single repo workflow; package it as a plugin later only if you need public installation, multiple skills, or bundled connectors.
 
 The skill does not install models or rent infrastructure by itself. Those remain explicit, cost-bearing actions that require user approval.
+
+To publish this project as a durable AtlasRepo solution, use the copy-ready [AtlasRepo agent task](docs/ATLASREPO_AGENT_PROMPT.ru.md). It includes ingestion, deduplication, evidence, licensing, localization, auto-sync preservation, tests, release gates, and stop conditions.
 
 ## Why use it—and where it stops
 
