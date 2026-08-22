@@ -21,5 +21,5 @@ fi
 
 ln -s "$source_skill" "$target_skill"
 echo "Connected Music Video Generator skill: $target_skill -> $source_skill"
-echo 'Invoke it with: $music-video-generator'
+echo "Invoke it with: \$music-video-generator"
 echo "Codex detects skill changes automatically; restart Codex if it does not appear."
