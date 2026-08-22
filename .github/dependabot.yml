@@ -7,6 +7,11 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - dependencies
+    ignore:
+      # NumPy 2.5 requires Python 3.12; the optional MusicGen environment targets 3.11.
+      - dependency-name: numpy
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /

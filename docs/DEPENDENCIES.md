@@ -26,6 +26,8 @@ Before merging an update:
 
 Dependabot proposes updates for declared Python requirements and pinned GitHub Actions. It does not validate optional model weights or local third-party checkouts.
 
+NumPy major updates are intentionally ignored by Dependabot while the optional MusicGen environment targets Python 3.11; review that constraint manually when the backend is migrated.
+
 The current requirements file pins direct dependencies but is not a hash-locked, cross-platform lockfile. Add a reviewed lock and hashes before publishing a reproducible release artifact.
 
 ## Release gate
