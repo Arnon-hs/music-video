@@ -8,6 +8,8 @@ This file records user-visible repository changes. The project follows semantic 
 
 - One-hour playlist CLI workflow with varied same-genre tracks, resumable generation, crossfades, one fitted image, progress reporting, and final duration validation.
 - `./music-video web` read-only dashboard for current CLI progress, run metadata, logs, validated audio/video previews, and Postiz private-draft status.
+- English-first dashboard interface with a persistent English, Russian, and Simplified Chinese language switcher.
+- Dashboard and CLI example screenshots embedded in all three startup guides.
 - Repository-scoped Codex skill plus an optional symlink installer for using the project from a Codex work session.
 - RunPod Pod, Vast.ai, and generic GPU VPS instructions, including persistent storage, SSH monitoring, artifact verification, and the current RunPod Serverless boundary.
 - Community contribution, conduct, support, and security policies.

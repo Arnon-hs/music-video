@@ -52,6 +52,7 @@ metadata/
 *.wav
 *.webm
 *.webp
+!docs/images/*.png
 
 # Runtime logs and operating-system files
 *.log

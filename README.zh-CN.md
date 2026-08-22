@@ -429,7 +429,7 @@ Codex、Claude Code 或其他本地 agent 的安全操作顺序：
 6. 只启动一次有明确限制的生成任务；
 7. 读取真实的 `./music-video status --json`；
 8. 使用 `ffprobe` 并通过试听验证结果；
-9. 不提交 `.env`、媒体、模型、checkpoint 和日志；
+9. 不提交 `.env`、生成媒体、模型、checkpoint 和日志；经过检查的文档截图只能放在 `docs/images`；
 10. 未经用户明确要求，不上传或发布任何内容。
 
 如果希望更快开始，请调用 `$music-video-generator`，并使用本指南开头的完整请求。Repo skill 会自动应用此检查清单。
@@ -488,6 +488,7 @@ Dashboard 现在是当前 CLI 的只读 Web 界面。它跟踪同一 checkout �
 - 当前统一的 CLI 日志，而不是旧的硬编码 Stable Audio 队列日志；
 - 只显示属于当前运行且已验证的音频/视频，并支持手机上的 HTTP Range 播放；
 - 每个成品视频的 Postiz 状态：等待检查、正在上传，或已创建带确认 post ID 的私密 draft。
+- 默认使用英文，并提供可记忆选择的 `EN`、`RU`、`简中` 语言切换。
 
 页面不会自行启动生成、下载模型、取消任务、上传文件或发布内容。CLI 仍然负责控制，浏览器只负责状态和预览。
 
@@ -496,6 +497,7 @@ Dashboard 现在是当前 CLI 的只读 Web 界面。它跟踪同一 checkout �
 终端 1：
 
 ```bash
+./music-video doctor
 ./music-video web
 ```
 
@@ -509,6 +511,20 @@ Dashboard 现在是当前 CLI 的只读 Web 界面。它跟踪同一 checkout �
 ```
 
 页面每两秒刷新一次。同样的机器可读状态可通过 `http://127.0.0.1:8765/status.json` 和 `./music-video status --json` 获取。
+
+### Dashboard 和 CLI 示例
+
+Dashboard 默认显示英文。使用右上角按钮切换到俄语或简体中文；浏览器会记住你的选择。
+
+![正在渲染一小时播放列表的英文 Web dashboard](docs/images/web-dashboard-en.png)
+
+列出可用的纯器乐流派：
+
+![CLI 音乐流派列表示例](docs/images/cli-genres.png)
+
+无需加载模型或生成媒体即可预览一小时播放列表计划：
+
+![一小时 lo-fi 播放列表 CLI dry-run 示例](docs/images/cli-playlist-dry-run.png)
 
 ### 通过 Tailscale 私密访问
 
@@ -561,7 +577,7 @@ git diff --check
 
 - 保持 CLI 仅包含代码，并避免不必要的依赖；
 - 行为发生变化时添加测试；
-- 不添加媒体、模型、第三方 checkout 和 credentials；
+- 不添加生成媒体、模型、第三方 checkout 和 credentials；经过检查的文档截图只能放在 `docs/images`；
 - 保留 PolyForm 许可证要求的 Required Notice；
 - 如实说明第三方模型和生成结果的许可证边界。
 

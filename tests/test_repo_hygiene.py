@@ -27,6 +27,19 @@ class RepositoryHygieneTests(unittest.TestCase):
                 errors = hygiene.violations([Path("module.py")])
         self.assertEqual(errors, [])
 
+    def test_png_screenshots_are_allowed_only_in_documentation_images(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            documentation = root / "docs" / "images"
+            documentation.mkdir(parents=True)
+            (documentation / "dashboard.png").write_bytes(b"screenshot")
+            (root / "dashboard.png").write_bytes(b"screenshot")
+            with mock.patch.object(hygiene, "ROOT", root):
+                allowed = hygiene.violations([Path("docs/images/dashboard.png")])
+                forbidden = hygiene.violations([Path("dashboard.png")])
+        self.assertEqual(allowed, [])
+        self.assertTrue(any("forbidden binary/media extension" in error for error in forbidden))
+
 
 if __name__ == "__main__":
     unittest.main()

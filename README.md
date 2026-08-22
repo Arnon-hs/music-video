@@ -458,7 +458,7 @@ Use this safe sequence for Codex, Claude Code, or another local agent:
 6. run one bounded generation job;
 7. poll `./music-video status --json` instead of guessing progress;
 8. verify the resulting file with `ffprobe` and human listening/review;
-9. never commit `.env`, media, models, checkpoints, logs, or generated output;
+9. never commit `.env`, generated media, models, checkpoints, logs, or output; reviewed documentation screenshots are allowed only in `docs/images`;
 10. never upload or publish unless the user explicitly requests it.
 
 For an even shorter start, invoke `$music-video-generator` and use the copy-ready request near the top of this guide. The repository skill applies this checklist automatically.
@@ -528,6 +528,7 @@ The dashboard is now the read-only web face of the current CLI. It follows `gene
 - the current CLI log rather than a hard-coded Stable Audio queue log;
 - only validated audio/video files associated with the current run, with HTTP Range playback on phones;
 - Postiz status for each finished video: waiting for review, uploading, or private draft created with a returned post ID.
+- an English-first interface with persistent `EN`, `RU`, and `简中` language selection.
 
 It does not start generation, download models, upload files, cancel work, or publish anything. The CLI remains the control plane; the browser is its status and preview surface.
 
@@ -536,6 +537,7 @@ It does not start generation, download models, upload files, cancel work, or pub
 Terminal 1:
 
 ```bash
+./music-video doctor
 ./music-video web
 ```
 
@@ -549,6 +551,20 @@ Open `http://127.0.0.1:8765`. Keep the dashboard running and start the actual jo
 ```
 
 The page refreshes every two seconds. The same machine-readable state remains available at `http://127.0.0.1:8765/status.json` and through `./music-video status --json`.
+
+### Interface and CLI examples
+
+The dashboard defaults to English. Use the language buttons in the top-right corner to switch to Russian or Simplified Chinese; the browser remembers the selection.
+
+![English web dashboard showing a running one-hour playlist render](docs/images/web-dashboard-en.png)
+
+List the available instrumental genres:
+
+![CLI example listing music genres](docs/images/cli-genres.png)
+
+Preview a one-hour playlist plan without loading a model or generating media:
+
+![CLI dry-run example for a one-hour lo-fi playlist](docs/images/cli-playlist-dry-run.png)
 
 ### Open it privately through Tailscale
 
@@ -601,7 +617,7 @@ Before a contribution:
 
 - keep the CLI code-only and dependency-light;
 - add or update tests for behavior changes;
-- do not add generated media, model files, third-party checkouts, or credentials;
+- do not add generated media, model files, third-party checkouts, or credentials; reviewed documentation screenshots belong only in `docs/images`;
 - preserve the PolyForm required notice;
 - document third-party license boundaries honestly.
 

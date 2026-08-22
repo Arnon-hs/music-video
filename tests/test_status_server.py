@@ -51,6 +51,12 @@ class StatusServerTests(unittest.TestCase):
             self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
             self.assertEqual(response.headers["X-Frame-Options"], "DENY")
             self.assertIn("default-src 'self'", response.headers["Content-Security-Policy"])
+            body = response.read().decode("utf-8")
+            self.assertIn('<html lang="en">', body)
+            self.assertIn('data-lang="en"', body)
+            self.assertIn('data-lang="ru"', body)
+            self.assertIn('data-lang="zh"', body)
+            self.assertIn("music-video-language", body)
         with self.assertRaises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(f"{self.base_url}/unknown", timeout=2)
         self.assertEqual(error.exception.code, 404)

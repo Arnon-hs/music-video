@@ -26,6 +26,7 @@ FORBIDDEN_SUFFIXES = {
     ".pt", ".pth", ".safetensors", ".tif", ".tiff", ".wav", ".webm", ".webp",
 }
 FORBIDDEN_NAMES = {".DS_Store"}
+DOCUMENTATION_IMAGE_DIRECTORY = Path("docs/images")
 SECRET_PATTERNS = {
     "AWS access key": re.compile(rb"AKIA[0-9A-Z]{16}"),
     "GitHub token": re.compile(rb"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}"),
@@ -53,7 +54,8 @@ def violations(paths: list[Path]) -> list[str]:
             errors.append(f"forbidden operating-system file: {relative}")
         if relative.parts and relative.parts[0] in FORBIDDEN_DIRECTORIES:
             errors.append(f"forbidden generated/vendor directory: {relative}")
-        if relative.suffix.lower() in FORBIDDEN_SUFFIXES:
+        documentation_image = relative.parent == DOCUMENTATION_IMAGE_DIRECTORY and relative.suffix.lower() == ".png"
+        if relative.suffix.lower() in FORBIDDEN_SUFFIXES and not documentation_image:
             errors.append(f"forbidden binary/media extension: {relative}")
 
         absolute = ROOT / relative
