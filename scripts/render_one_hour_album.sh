@@ -75,7 +75,7 @@ ffmpeg -hide_banner -loglevel warning -y -progress "$VIDEO_PROGRESS" -loop 1 -i 
 FFMPEG_PID=$!
 while kill -0 "$FFMPEG_PID" 2>/dev/null; do
   OUT_US="$(awk -F= '$1=="out_time_us"{v=$2} END{print v+0}' "$VIDEO_PROGRESS" 2>/dev/null || echo 0)"
-  PERCENT=$((OUT_US / 1000000 * 100 / TOTAL_SECONDS))
+  PERCENT=$((OUT_US * 100 / 1000000 / TOTAL_SECONDS))
   [ "$PERCENT" -gt 99 ] && PERCENT=99
   printf 'state=rendering_video\ncompleted=0\ntotal=%d\npercent=%d\ncurrent=1\nvideo_started_at=%s\nqueue_started_at=%s\nmusic_finished_at=%s\nimage=%s\nfile=%s\n' \
     "$COUNT" "$PERCENT" "$VIDEO_STARTED_AT" "$QUEUE_STARTED_AT" "$MUSIC_FINISHED_AT" "$IMAGE" "$VIDEO" > "$STATUS"

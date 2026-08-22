@@ -112,7 +112,7 @@ PLAYLIST="$MUSIC_DIR/playlist.m3u8"
   echo '#EXTM3U'
   for track in "${TRACKS[@]}"; do
     echo "#EXTINF:${TRACK_SECONDS},$(basename "$track" .mp3)"
-    echo "$(basename "$track")"
+    basename "$track"
   done
 } > "$PLAYLIST"
 

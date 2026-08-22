@@ -16,7 +16,10 @@ WORK_ROOT="$ROOT/tmp/stable-audio3-albums-v4"
 STATUS="$ROOT/tmp/render-progress.txt"
 LOG="$ROOT/tmp/stable-audio3-albums-v4.log"
 
-[ "$TRACK_COUNT" -ge 10 ] && [ "$TRACK_COUNT" -le 15 ] || { echo "TRACK_COUNT must be between 10 and 15" >&2; exit 1; }
+if [ "$TRACK_COUNT" -lt 10 ] || [ "$TRACK_COUNT" -gt 15 ]; then
+  echo "TRACK_COUNT must be between 10 and 15" >&2
+  exit 1
+fi
 mkdir -p "$MUSIC_ROOT" "$OUTPUT_ROOT" "$WORK_ROOT" "$ROOT/tmp"
 : > "$LOG"
 
@@ -33,7 +36,6 @@ IMAGES=()
 while IFS= read -r image; do IMAGES+=("$image"); done < <(find "$IMAGE_DIR" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) | sort)
 [ "${#IMAGES[@]}" -gt 0 ] || { printf 'state=blocked\nreason=no-images\n' > "$STATUS"; exit 1; }
 
-VARIANTS=(rainy-cafe midnight-library morning-window fireplace neon-street cloudy-day small-bookshop train-ride after-hours garden-rain vinyl-basement dawn)
 ALBUM_NAMES=(study-focused cafe-warm nostalgic-chill rainy-cafe vintage-vinyl-night cosmic-dreams forest-retreat sunset-serenade winter-cozy night-drive)
 TRACK_NAMES=(piano-focus guitar-answer rhodes-response descending-keys guitar-harmonics cassette-keys bass-led arpeggio-candlelight major-seventh resolution guitar-piano-dialogue swung-piano-hook floating-rhodes warm-bass-dialogue rainy-piano-ornament hopeful-resolution)
 TRACK_DURATIONS=(210 214 218 222 226 230 234 212 216 220 224 228 232 211 217)
@@ -77,7 +79,7 @@ for ((album_index=1; album_index<=ALBUM_COUNT; album_index++)); do
     echo '#EXTM3U'
     for ((playlist_index=1; playlist_index<=TRACK_COUNT; playlist_index++)); do
       echo "#EXTINF:${TRACK_DURATIONS[$((playlist_index-1))]},album-${album_index}-${TRACK_NAMES[$((playlist_index-1))]}"
-      echo "$(basename "${tracks[$((playlist_index-1))]}")"
+      basename "${tracks[$((playlist_index-1))]}"
     done
   } > "$playlist"
 

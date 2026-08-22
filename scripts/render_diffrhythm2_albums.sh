@@ -17,7 +17,10 @@ STATUS="$ROOT/tmp/render-progress.txt"
 LOG="$ROOT/tmp/diffrhythm2-albums.log"
 
 [ "$ALBUM_COUNT" -ge 1 ] || { echo "ALBUM_COUNT must be positive" >&2; exit 1; }
-[ "$TRACK_COUNT" -ge 1 ] && [ "$TRACK_COUNT" -le 15 ] || { echo "TRACK_COUNT must be between 1 and 15" >&2; exit 1; }
+if [ "$TRACK_COUNT" -lt 1 ] || [ "$TRACK_COUNT" -gt 15 ]; then
+  echo "TRACK_COUNT must be between 1 and 15" >&2
+  exit 1
+fi
 
 mkdir -p "$MUSIC_ROOT" "$OUTPUT_ROOT" "$WORK_ROOT" "$ROOT/tmp"
 : > "$LOG"
@@ -90,7 +93,7 @@ for ((album_index=1; album_index<=ALBUM_COUNT; album_index++)); do
     echo '#EXTM3U'
     for track in "${TRACKS[@]}"; do
       echo "#EXTINF:${TRACK_SECONDS},$(basename "$track" .mp3)"
-      echo "$(basename "$track")"
+      basename "$track"
     done
   } > "$PLAYLIST"
 
