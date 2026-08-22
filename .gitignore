@@ -1,0 +1,58 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv*/
+venv/
+
+# Third-party source trees, models, and checkpoints
+.models/
+models/
+ace-step-v1/
+*.bin
+*.ckpt
+*.onnx
+*.pt
+*.pth
+*.safetensors
+
+# Generated and downloaded material
+assets/
+output/
+tmp/
+metadata/
+
+# Media files must never be committed to this code-only repository
+*.aac
+*.aif
+*.aiff
+*.avi
+*.flac
+*.gif
+*.jpeg
+*.jpg
+*.m4a
+*.mkv
+*.mov
+*.mp3
+*.mp4
+*.ogg
+*.png
+*.tif
+*.tiff
+*.wav
+*.webm
+*.webp
+
+# Runtime logs and operating-system files
+*.log
+*.pid
+.DS_Store

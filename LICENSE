@@ -1,0 +1,22 @@
+PROPRIETARY SOFTWARE LICENSE
+
+Copyright (c) 2026 Vasilii Bereznikov. All Rights Reserved.
+
+This repository's original source code, configuration, and documentation are
+the exclusive property of Vasilii Bereznikov (the "Owner").
+
+No permission is granted to use, copy, modify, merge, publish, distribute,
+sublicense, sell, reverse engineer, or create derivative works from this
+software, in whole or in part, without the Owner's prior written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+OWNER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT
+OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+This license applies only to the original material contained in this
+repository. Third-party software, model code, model weights, services, and
+media are not included and remain governed by their respective licenses and
+terms. Generated outputs may also be subject to model, data-source, platform,
+and other third-party rights.

@@ -1,0 +1,13 @@
+duration_minutes: 60
+resolution: 1920x1080
+fps: 24
+image_queries:
+  - neon rainy city at night
+  - purple cyberpunk portal
+  - wet street reflections
+  - cassette player neon
+  - futuristic city night
+  - abstract magenta blue lights
+music_prompt: "Instrumental lo-fi hip-hop, 82 BPM, minor key, dusty vinyl texture, soft tape hiss, lazy swung drums, gentle sub bass, mellow Rhodes chords, dreamy detuned electric piano, distant rainy cyberpunk city ambience, purple and magenta night mood, nostalgic underground internet atmosphere, no lead vocal, no singing, no recognisable melody."
+music_segments: 12
+segment_seconds: 30

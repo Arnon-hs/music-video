@@ -1,0 +1,91 @@
+{
+  "albums": [
+    {
+      "slug": "study-focused",
+      "title": "Lofi Study Focus",
+      "prompt": "Create Lofi track for Study, Work. Mood: calm, focused. Tempo: 85 BPM. Dusty drums, warm Rhodes or piano, soft bass, vinyl texture, understated melodic loop. Loopable bed with a 4-bar intro, steady main groove, subtle B variation and seamless return point. Cozy lo-fi warmth, gentle tape wobble, rounded transients, no distracting lead vocal, no sudden fills, alarms or sharp lead sounds. Clean mix with clear midrange for concentration.",
+      "mood": "calm, focused, productive",
+      "bpm": 85
+    },
+    {
+      "slug": "cafe-warm",
+      "title": "Lofi Cafe Warmth",
+      "prompt": "Create Lofi track for Cafe and Vlog. Mood: cozy, warm. Tempo: 92 BPM. Dusty drums, warm Rhodes or piano, soft bass, vinyl texture and understated melodic loop. Concise intro, clear main section, small lift and polished export-ready ending. Cozy lo-fi warmth, gentle tape wobble, rounded transients, no distracting lead vocal, leave clear midrange space for spoken voice or dialogue.",
+      "mood": "cozy, warm, social, inviting",
+      "bpm": 92
+    },
+    {
+      "slug": "nostalgic-chill",
+      "title": "Nostalgic Lofi YouTube",
+      "prompt": "Create Lofi track for Study and YouTube. Mood: nostalgic, chill. Tempo: 88 BPM. Dusty drums, warm Rhodes or piano, soft bass, vinyl texture, understated melodic loop. Loopable 4-bar intro, steady groove, subtle B variation and seamless return. Cozy tape warmth, gentle wobble, rounded transients, clear midrange for narration, calming repetition and no sharp sounds.",
+      "mood": "nostalgic, chill, reflective",
+      "bpm": 88
+    },
+    {
+      "slug": "rainy-cafe",
+      "title": "Lofi Rainy Cafe",
+      "prompt": "Immerse the listener in a cozy cafe on a rainy day. Mood: chill, nostalgic, peaceful. Tempo: 84 BPM. Rhythmic rain, warm bass guitar, intimate cafe piano, acoustic guitar, brushed jazz drums and subtle vinyl texture. Relaxed study backdrop, soft room tone, pleasant consonant harmony, no vocals and no dramatic changes.",
+      "mood": "rainy, cozy, peaceful, late evening",
+      "bpm": 84
+    },
+    {
+      "slug": "vintage-vinyl-night",
+      "title": "Lofi Vintage Vinyl Night",
+      "prompt": "Create a warm vintage vinyl night lo-fi album. Mood: nostalgic, chill, romantic. Tempo: 86 BPM. Record crackle, smooth jazz guitar, warm Rhodes, soft bass and dusty drum kit. Intimate analog room, understated melodic loops, relaxed pocket, rounded transients and smooth original instrumental writing.",
+      "mood": "nostalgic, romantic, analog",
+      "bpm": 86
+    },
+    {
+      "slug": "cosmic-dreams",
+      "title": "Cosmic Lofi Dreams",
+      "prompt": "Create an ethereal cosmic lo-fi album. Mood: dreamy, hopeful, calm. Tempo: 82 BPM. Soft synth pad, mellow piano, glassy bell accents, warm bass, dusty drums and subtle tape texture. Spacious but cozy mix, simple memorable motifs, gentle movement, no harsh high frequencies and no cinematic drops.",
+      "mood": "dreamy, ethereal, hopeful",
+      "bpm": 82
+    },
+    {
+      "slug": "forest-retreat",
+      "title": "Lofi Forest Retreat",
+      "prompt": "Create a peaceful forest lo-fi album. Mood: serene, calm, restorative. Tempo: 80 BPM. Soft flute, gentle ukulele or acoustic guitar, brushed percussion, quiet leaves and rain ambience, warm bass and mellow piano. Organic close room sound, calm repeating groove, seamless transitions and no sharp effects.",
+      "mood": "peaceful, serene, natural",
+      "bpm": 80
+    },
+    {
+      "slug": "sunset-serenade",
+      "title": "Lofi Sunset Serenade",
+      "prompt": "Create a serene sunset lo-fi album. Mood: calm, dreamy, warm. Tempo: 87 BPM. Soft piano, gentle acoustic guitar, delicate harp or marimba accents, dusty drums, warm bass and subtle vinyl texture. Golden-hour harmony, tender original melodies, understated lift, smooth return and no sudden arrangement changes.",
+      "bpm": 87
+    },
+    {
+      "slug": "winter-cozy",
+      "title": "Lofi Winter Cozy",
+      "prompt": "Create a cozy winter lo-fi album. Mood: peaceful, reflective, comforting. Tempo: 78 BPM. Fireplace crackle, mellow piano, warm guitar, soft cello or strings, brushed percussion, rounded bass and quiet tape wobble. Snowy evening atmosphere, gentle consonant harmony, minimal dynamics and no scary or ominous sounds.",
+      "mood": "peaceful, reflective, comforting",
+      "bpm": 78
+    },
+    {
+      "slug": "night-drive",
+      "title": "Lofi Night Drive",
+      "prompt": "Create a chill night-drive lo-fi album. Mood: dreamy, mysterious, calm. Tempo: 90 BPM. Steady dusty drums, soft bass, warm synthesizer, mellow electric piano, subtle city ambience and gentle tape wobble. Smooth forward motion, restrained variation, clean low end, no drops, alarms, sirens or harsh lead sounds.",
+      "mood": "dreamy, mysterious, nocturnal",
+      "bpm": 90
+    }
+  ],
+  "track_variations": [
+    {"name":"felt-piano-focus","prompt":"felt piano is the only melodic lead, sparse four-note motif, upright bass support, straight relaxed pocket","avoid":"guitar lead, Rhodes lead, synth lead, flute, saxophone, bells"},
+    {"name":"nylon-guitar-answer","prompt":"nylon acoustic guitar is the only melodic lead, fingerpicked answer phrases, muted bass, slight lazy swing","avoid":"piano lead, Rhodes lead, synth lead, flute, saxophone, bells"},
+    {"name":"rhodes-call-response","prompt":"electric Rhodes is the only melodic lead, warm call-and-response phrases, soft sub bass, gentle two-step pocket","avoid":"acoustic guitar lead, felt piano lead, synth lead, flute, saxophone, bells"},
+    {"name":"marimba-dust","prompt":"soft wooden marimba is the only melodic lead, minimal descending motif, round bass, light triplet feel","avoid":"piano lead, guitar lead, Rhodes lead, synth lead, flute, saxophone"},
+    {"name":"cello-rain","prompt":"warm cello is the only melodic lead, long lyrical notes and gentle counterline, brushed drums, behind-the-beat groove","avoid":"piano lead, guitar lead, Rhodes lead, synth lead, flute, marimba"},
+    {"name":"cassette-synth","prompt":"muted analog synth is the only melodic lead, dusty cassette motif, quiet head-nod pulse, soft bass","avoid":"piano lead, guitar lead, Rhodes lead, flute, saxophone, bells"},
+    {"name":"bass-led-study","prompt":"upright bass carries the only melodic lead, short walking motif, piano used only as sparse chord stabs, brushed shuffle","avoid":"piano melody, guitar melody, Rhodes melody, synth lead, flute, saxophone"},
+    {"name":"flute-window","prompt":"breathy wooden flute is the only melodic lead, spacious call-and-response, acoustic guitar only as texture, candlelit pulse","avoid":"piano lead, Rhodes lead, synth lead, saxophone, trumpet, marimba"},
+    {"name":"major-seventh-piano","prompt":"bright major-seventh piano is the only melodic lead, hopeful resolving motif, soft guitar texture, subtle syncopation","avoid":"Rhodes lead, synth lead, flute, saxophone, cello, marimba"},
+    {"name":"jazz-guitar-dialogue","prompt":"clean hollow-body jazz guitar is the only melodic lead, short chord-melody phrases, quiet drums, unhurried half-time feel","avoid":"piano lead, Rhodes lead, synth lead, flute, saxophone, trumpet"},
+    {"name":"saxophone-silhouette","prompt":"soft tenor saxophone is the only melodic lead, restrained swung hook, piano only as distant harmony, broken-beat pocket","avoid":"piano lead, guitar lead, Rhodes lead, synth lead, flute, trumpet"},
+    {"name":"kalimba-drift","prompt":"delicate kalimba is the only melodic lead, floating repeating pattern, Rhodes only as a pad, gentle swing","avoid":"piano lead, guitar lead, synth lead, flute, saxophone, bells"},
+    {"name":"mandolin-garden","prompt":"quiet mandolin is the only melodic lead, warm plucked motif, rounded bass, loose organic jazz pocket","avoid":"piano lead, Rhodes lead, synth lead, flute, saxophone, marimba"},
+    {"name":"bell-ornament","prompt":"soft felted bell is the only melodic lead, sparse ornamental notes with long silence, piano only as low harmony, offbeat groove","avoid":"guitar lead, Rhodes lead, synth lead, flute, saxophone, marimba"},
+    {"name":"hopeful-ukulele","prompt":"gentle ukulele is the only melodic lead, optimistic final motif, warm bass and brushed drums, minimal relaxed pulse","avoid":"piano lead, Rhodes lead, synth lead, flute, saxophone, cello"}
+  ],
+  "durations_seconds": [210, 214, 218, 222, 226, 230, 234, 212, 216, 220, 224, 228, 232, 211, 217]
+}
