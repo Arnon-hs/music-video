@@ -278,13 +278,74 @@ The CLI is an orchestrator: the model runs on the machine where you launch the c
 
 ### What to expect from your hardware
 
-- Start with a 30–60 second job. A successful `doctor` only proves paths exist; it does not prove speed, memory headroom, or artistic quality.
-- On a 16 GB Apple Silicon Mac, run one backend at a time, keep free space on both the project disk and macOS system volume, and expect CPU fallback to be much slower. `--force-cpu` is useful for stability testing.
-- For a rented NVIDIA machine, a 24 GB VRAM class is a conservative first choice when you have not benchmarked the exact model. Smaller GPUs may work with offload/quantization, but the current project adapters do not configure every upstream optimization automatically.
-- CPU-only generation is possible for some backends, but a one-hour playlist can take a long time because it creates many independent tracks before FFmpeg starts.
-- Disk use includes the repository, Python environment, model weights, caches, generated tracks, temporary audio, and final MP4. Keep important outputs on persistent storage.
+These are conservative planning profiles for this repository, not universal model minimums. Start with a 30–60 second job: a successful `doctor` proves that paths exist, but not speed, memory headroom, model compatibility, or artistic quality.
 
-Always follow the upstream installation guide for the exact model version, then return to `./music-video doctor`. Do not assume that a newer upstream release is compatible with the current adapter.
+#### Base computer requirements
+
+| Component | CLI, dry-run, and FFmpeg only | Practical local generation | Comfortable playlist work |
+|---|---|---|---|
+| Operating system | macOS 14+ or a current 64-bit Linux distribution | macOS 14+ on Apple Silicon, or Ubuntu 22.04/24.04 on x86-64 | Linux with NVIDIA CUDA is the most compatible remote route |
+| CPU | 4 modern cores | 8 modern cores | 8–16 cores; FFmpeg and CPU fallback benefit from more cores |
+| Memory | 8 GB; do not expect dependable model generation | 16 GB is the practical floor for one short, lightweight job | 32 GB recommended; 64 GB is useful for heavy CPU fallback and multiple model caches |
+| Free disk | 20 GB for code, tools, and temporary video work | at least 50 GB for one backend and short outputs | 100 GB recommended for one-hour work; 200 GB if keeping several backends/checkpoints |
+| Required tools | Bash, Git, Python 3, FFmpeg, `ffprobe` | Python 3.11 plus one isolated backend environment | add `tmux`; on NVIDIA, use a driver/CUDA/PyTorch combination supported by that backend |
+| Network | not needed for an already prepared dry-run | needed for the initial code/model download | stable connection for remote setup; generation itself can remain offline |
+
+The MusicGen adapter also refuses MPS startup when the internal macOS volume has less than 12 GiB free. Model weights may live elsewhere, but macOS and PyTorch still need internal scratch space.
+
+#### Which Macs are suitable?
+
+Apple Silicon is the supported Mac family. Apple [documents PyTorch MPS](https://developer.apple.com/metal/pytorch/) on Apple Silicon and macOS 14 or later; CPU and GPU share unified memory, so the configured memory matters as much as the processor name.
+
+| Mac configuration | Suitability for this project |
+|---|---|
+| Intel Mac | CLI and FFmpeg may work, but local model generation is untested and generally not recommended; use a remote NVIDIA GPU instead |
+| M1/M2 with 8 GB | suitable for browsing the project, dry-runs, Postiz, and video assembly; too little headroom for dependable local generation |
+| Any M1–M5 with 16 GB | minimum practical tier for one backend and 30–60 second experiments; close other memory-heavy apps and expect swapping or slow CPU fallback |
+| M1–M5 Pro/Max with 24 or 32 GB | recommended local tier for repeated generation and playlist preparation; 32 GB gives noticeably safer headroom |
+| Max/Ultra with 64 GB or more | best local headroom for heavier models and CPU fallback, but CUDA-only paths can still require a Linux/NVIDIA server |
+
+Faster M-series generations reduce runtime, but extra unified memory usually improves reliability more than moving one chip generation forward with the same small memory capacity. This repository has been observed on an M4 with 16 GB; ACE-Step v1 required a very slow CPU fallback after an MPS deadlock, so that machine should not be presented as a fast one-hour renderer.
+
+#### NVIDIA server or RunPod profile
+
+| Profile | GPU VRAM | System RAM | CPU | Persistent disk | Use |
+|---|---:|---:|---:|---:|---|
+| Small experiment | 12–16 GB | 32 GB | 8 vCPU | 80 GB | one reviewed lightweight backend and short tests; not guaranteed for every adapter |
+| Recommended | 24 GB | 64 GB | 8–16 vCPU | 150 GB | safest first choice for current backends and one-hour playlist jobs |
+| High headroom | 48 GB+ | 64–128 GB | 16+ vCPU | 200 GB+ | larger/newer checkpoints, fewer offload compromises, or several retained environments |
+
+A one-hour playlist does not need the entire hour in GPU memory: the CLI generates separate tracks and joins them later. It does increase total runtime, temporary storage, and failure exposure, so keep outputs on persistent storage and rely on resume support.
+
+#### Backend-specific reality check
+
+| Backend | Mac guidance | NVIDIA guidance |
+|---|---|---|
+| MusicGen small | 16 GB minimum, 24/32 GB preferred; MPS can fall back to CPU | 12–16 GB may be enough for this small model, but test 30 seconds first |
+| ACE-Step v1 adapter | 16 GB runs only as a slow fallback in the observed setup; 32 GB+ is safer | start at 24 GB VRAM for this repository's older 3.5B adapter |
+| DiffRhythm 2 | upstream installation mentions macOS, but this project's full MPS path is not validated | use 24 GB VRAM as the conservative first deployment |
+| Stable Audio 3 Small-Music | 16 GB minimum, 24/32 GB preferred; current adapter is PyTorch-based, not the newer optimized MLX route | lightweight compared with larger variants; still test the exact checkpoint/runtime before a long queue |
+
+Upstream projects can advertise lower requirements through quantization, offload, MLX, or newer model variants. Those numbers apply only when this repository's adapter actually uses that path. Always follow the upstream installation guide for the exact compatible model version, return to `./music-video doctor`, and run a short generation before renting hours of GPU time.
+
+Check a Mac before setup:
+
+```bash
+system_profiler SPHardwareDataType
+sw_vers
+df -h /
+./music-video doctor --json
+```
+
+Check a Linux/NVIDIA server:
+
+```bash
+nvidia-smi
+lscpu
+free -h
+df -h /workspace
+./music-video doctor --json
+```
 
 ### [facebookresearch / AudioCraft (MusicGen)](https://github.com/facebookresearch/audiocraft)
 

@@ -13,6 +13,18 @@ The repository can run on a rented GPU machine today, but it does so as a normal
 
 Prices and GPU availability change frequently. Check the provider console at deployment time instead of copying a price from this guide.
 
+## Recommended server sizes
+
+These are conservative project profiles, not hard minimums for every upstream model. RunPod also recommends choosing a Pod by workload, VRAM, RAM, and storage rather than GPU name alone; see [Choose a Pod](https://docs.runpod.io/pods/choose-a-pod).
+
+| Profile | NVIDIA VRAM | System RAM | vCPU | Persistent storage | When to use it |
+|---|---:|---:|---:|---:|---|
+| Small experiment | 12–16 GB | 32 GB | 8 | 80 GB | one lightweight backend and a 30–60 second test; compatibility is not guaranteed |
+| Recommended | 24 GB | 64 GB | 8–16 | 150 GB | safest first deployment for the current adapters and one-hour playlist work |
+| High headroom | 48 GB+ | 64–128 GB | 16+ | 200 GB+ | larger checkpoints, fewer offload compromises, or several retained environments |
+
+Do not size the server from final video duration alone. Tracks are generated separately, so a one-hour playlist mainly increases total compute time, disk use, and the chance of an interrupted job—not the amount of audio that must fit in VRAM at once. The detailed Mac, RAM, disk, and backend matrix is in the [main system requirements](../README.md#what-to-expect-from-your-hardware).
+
 ## RunPod Pod: practical first run
 
 ### 1. Create the machine

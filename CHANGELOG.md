@@ -17,6 +17,7 @@ This file records user-visible repository changes. The project follows semantic 
 ### Changed
 
 - Reworked the English, Russian, and Simplified Chinese guides around a faster first dry-run, copy-ready agent requests, friendlier CLI recipes, realistic local/remote hardware expectations, and clearer benefits and limitations.
+- Added detailed computer and server requirements in all three guides, including Apple M1–M5 suitability, unified-memory tiers, disk budgets, NVIDIA VRAM/RAM profiles, backend-specific caveats, and environment-audit commands.
 - Removed the project-health/reference block from all three user guides.
 
 ### Security

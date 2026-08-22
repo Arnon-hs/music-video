@@ -264,13 +264,74 @@ CLI 只负责调度本地模型。本仓库不包含模型代码和权重。
 
 ### 对硬件的合理预期
 
-- 首次任务建议 30–60 秒。`doctor` 成功只说明路径存在，不代表速度、内存余量或音乐质量。
-- 在 16 GB Apple Silicon Mac 上一次只运行一个 backend，并为项目磁盘和 macOS 系统卷保留空间；CPU fallback 会明显更慢。
-- 对租用的 NVIDIA 机器，在尚未测试精确模型时，24 GB VRAM 可作为保守起点，但不是保证的最低要求。较小 GPU 可能通过 offload/quantization 工作，但本项目不会自动配置所有 upstream 优化。
-- 某些 backend 可以使用纯 CPU，但一小时播放列表需要先生成许多独立曲目，因此可能耗时很久。
-- 持久磁盘需要容纳仓库、Python 环境、模型权重、缓存、曲目、临时音频和最终 MP4。
+以下是本仓库的保守规划配置，并不是所有模型通用的最低要求。请先生成 30–60 秒：`doctor` 成功只说明路径存在，不代表速度、内存余量、模型版本兼容性或音乐质量。
 
-请按照所选模型精确版本的 upstream 指南安装，然后再次运行 `./music-video doctor`。不要假设最新 upstream 版本必然兼容当前适配器。
+#### 基础系统要求
+
+| 组件 | 仅运行 CLI、dry-run 和 FFmpeg | 实用的本地生成配置 | 舒适的播放列表配置 |
+|---|---|---|---|
+| 操作系统 | macOS 14+ 或当前 64 位 Linux | Apple Silicon 上的 macOS 14+，或 x86-64 Ubuntu 22.04/24.04 | 带 NVIDIA CUDA 的 Linux 是兼容性更好的远程方案 |
+| CPU | 4 个现代核心 | 8 个现代核心 | 8–16 核；FFmpeg 和 CPU fallback 可以利用更多核心 |
+| 内存 | 8 GB；不要期待可靠的模型生成 | 16 GB 是一次短小轻量任务的实际最低线 | 推荐 32 GB；64 GB 有利于重型 CPU fallback 和多个模型缓存 |
+| 可用磁盘 | 代码、工具和临时视频至少 20 GB | 一个 backend 和短输出至少 50 GB | 一小时任务推荐 100 GB；保留多个 backend/checkpoint 时建议 200 GB |
+| 必需工具 | Bash、Git、Python 3、FFmpeg、`ffprobe` | Python 3.11，以及一个独立的 backend 环境 | 再安装 `tmux`；NVIDIA 环境需匹配驱动、CUDA、PyTorch 和 backend |
+| 网络 | 已准备好的 dry-run 不需要网络 | 首次下载代码和模型时需要 | 远程配置需要稳定连接；生成阶段可以保持 offline |
+
+如果 macOS 内部系统卷的剩余空间不足 12 GiB，MusicGen 适配器也会拒绝启动 MPS。模型权重可以放在其他磁盘，但 macOS 与 PyTorch 仍然需要内部临时空间。
+
+#### 哪些 Mac 适合？
+
+本项目支持的 Mac 系列是 Apple Silicon。Apple 的 [PyTorch MPS 指南](https://developer.apple.com/metal/pytorch/)要求 Apple Silicon 和 macOS 14 或更高版本。CPU 与 GPU 共用 unified memory，因此内存容量和处理器代数同样重要。
+
+| Mac 配置 | 对本项目的适用性 |
+|---|---|
+| Intel Mac | CLI 与 FFmpeg 可能可用，但本地模型生成没有验证，通常不推荐；请使用远程 NVIDIA GPU |
+| 8 GB 的 M1/M2 | 适合浏览项目、dry-run、Postiz 和视频合成；没有足够余量进行可靠的本地生成 |
+| 16 GB 的任意 M1–M5 | 一个 backend 和 30–60 秒实验的实际最低档；关闭其他高内存应用，并预期 swap 或缓慢的 CPU fallback |
+| 24 或 32 GB 的 M1–M5 Pro/Max | 推荐的本地档位，适合重复生成与准备播放列表；32 GB 的可靠性余量明显更好 |
+| 64 GB 以上的 Max/Ultra | 重型模型和 CPU fallback 的最佳本地余量，但 CUDA-only 路径仍需要 Linux/NVIDIA 服务器 |
+
+更新一代 M 系列通常能缩短运行时间，但与同样较小的内存配置相比，增加 unified memory 往往更能提高稳定性。本项目曾在 16 GB M4 上运行；ACE-Step v1 的 MPS 出现死锁后只能使用非常慢的 CPU fallback，因此这台机器不应被描述成快速的一小时渲染器。
+
+#### NVIDIA 服务器或 RunPod 配置
+
+| 配置 | GPU VRAM | 系统 RAM | CPU | 持久磁盘 | 用途 |
+|---|---:|---:|---:|---:|---|
+| 小型实验 | 12–16 GB | 32 GB | 8 vCPU | 80 GB | 一个已检查的轻量 backend 和短测试；不保证适用于所有适配器 |
+| 推荐配置 | 24 GB | 64 GB | 8–16 vCPU | 150 GB | 当前 backend 和一小时播放列表任务最稳妥的首次选择 |
+| 高余量 | 48 GB+ | 64–128 GB | 16+ vCPU | 200 GB+ | 更大/更新的 checkpoint、更少 offload 或保留多个环境 |
+
+一小时播放列表不需要把整整一小时音频放入 VRAM：CLI 会先生成独立曲目，再进行拼接。但总运行时间、临时磁盘和中断风险都会增加，因此请使用持久存储和恢复功能。
+
+#### 各 backend 的实际情况
+
+| Backend | Mac 建议 | NVIDIA 建议 |
+|---|---|---|
+| MusicGen small | 最低 16 GB，最好 24/32 GB；MPS 失败后可以回退到 CPU | 这款小模型可能只需 12–16 GB，但请先测试 30 秒 |
+| ACE-Step v1 适配器 | 已观察的 16 GB 环境只能使用缓慢 fallback；32 GB+ 更安全 | 本仓库较旧的 3.5B 适配器建议从 24 GB VRAM 开始 |
+| DiffRhythm 2 | upstream 提供 macOS 安装步骤，但本项目完整的 MPS 路径尚未验证 | 保守起点为 24 GB VRAM |
+| Stable Audio 3 Small-Music | 最低 16 GB，最好 24/32 GB；当前适配器使用 PyTorch，而不是较新的优化 MLX 路径 | 比大型版本轻量，但长队列前仍需测试精确 checkpoint/runtime |
+
+Upstream 项目可能通过 quantization、offload、MLX 或新版模型给出更低要求。只有当本仓库适配器真正使用相同路径时，这些数字才适用。请按照精确兼容版本的 upstream 指南安装，再运行 `./music-video doctor` 和一次短生成，然后才租用数小时 GPU。
+
+安装前检查 Mac：
+
+```bash
+system_profiler SPHardwareDataType
+sw_vers
+df -h /
+./music-video doctor --json
+```
+
+检查 Linux/NVIDIA 服务器：
+
+```bash
+nvidia-smi
+lscpu
+free -h
+df -h /workspace
+./music-video doctor --json
+```
 
 ### [facebookresearch / AudioCraft (MusicGen)](https://github.com/facebookresearch/audiocraft)
 
