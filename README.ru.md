@@ -28,6 +28,17 @@ Copyright 2026 Vasilii Bereznikov.
 
 Лицензии моделей, весов, сервисов и медиа проверяются отдельно. Лицензия кода модели не гарантирует права на веса или публикацию результата.
 
+## Здоровье проекта
+
+- [Правила участия](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Поддержка](SUPPORT.md)
+- [История изменений](CHANGELOG.md)
+- [Зависимости и supply chain](docs/DEPENDENCIES.md)
+
+Инженерная база проекта опирается на [OpenSSF secure development guidance](https://best.openssf.org/Concise-Guide-for-Developing-More-Secure-Software), [Open Source Guides для maintainers](https://opensource.guide/best-practices/), [обучение Linux Foundation](https://training.linuxfoundation.org/open-source-best-practice/) и подборку style-guides [Kristories / awesome-guidelines](https://github.com/Kristories/awesome-guidelines). Это применение практик, а не заявление, что проект под PolyForm является OSI Open Source.
+
 ## Быстрый старт
 
 ```bash
@@ -107,7 +118,7 @@ cd music-video
 | `--genre` | slug жанра; есть aliases `classic`, `lo-fi`, `dnb` |
 | `--duration` | длительность в секундах с проверкой лимита backend’а |
 | `--seed` | seed для воспроизводимой генерации |
-| `--prompt` | собственное описание стиля вместо жанрового; запрет на голос всё равно добавляется |
+| `--prompt` | описание стиля до 2000 символов без управляющих символов; запрет на голос всё равно добавляется |
 | `--video` | собрать MP4 после музыки |
 | `--force-cpu` | отключить GPU/MPS, где это поддерживается |
 | `--allow-downloads` | явно разрешить DiffRhythm/Stable Audio скачать отсутствующие модели |
@@ -144,14 +155,15 @@ CLI только оркестрирует локальные модели. Ко�
 ### [facebookresearch / AudioCraft (MusicGen)](https://github.com/facebookresearch/audiocraft)
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
+python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements-musicgen.txt
 
 ./music-video generate --backend musicgen --genre lofi --duration 60
 ```
 
 Веса `facebook/musicgen-small` имеют лицензию CC-BY-NC 4.0, поэтому результат всегда помечается `NON_COMMERCIAL_DEMO`. Первое скачивание требует ручной строки `DOWNLOAD_MODEL`.
+
+Прямые MusicGen-зависимости закреплены для review и security monitoring; разрешение transitive dependencies всё ещё может измениться. После изменения requirements пересоздайте venv и не используйте старое окружение.
 
 ### [ACE-Step / ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5)
 
@@ -286,15 +298,16 @@ set -a
 source .env
 set +a
 
+python3 scripts/postiz_upload_ready_videos.py --dry-run
 python3 scripts/postiz_upload_ready_videos.py
 python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 ```
 
-Скрипт запрашивает top-level draft и приватную видимость YouTube, а idempotency state хранит в `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` необязателен и попадает в черновик только при явной настройке. После ответа обязательно проверьте post ID и сам черновик в Postiz до ручной публикации.
+`--dry-run` показывает ожидающие видео без credentials и обращения к Postiz. Реальный запуск запрашивает top-level draft и приватную видимость YouTube, а idempotency state хранит в `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` необязателен и попадает в черновик только при явной настройке. API должен использовать HTTPS; HTTP разрешён только для loopback, если явно не установлен `POSTIZ_ALLOW_INSECURE_HTTP=1` после проверки сетевого риска. После ответа обязательно проверьте post ID и сам черновик в Postiz до ручной публикации.
 
 ## Status page в локальной сети
 
-Для существующей очереди Stable Audio albums:
+По умолчанию сервер слушает только `127.0.0.1`. Для явного доступа к существующей очереди Stable Audio из доверенной локальной сети:
 
 ```bash
 STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
@@ -330,3 +343,9 @@ git diff --check
 - не добавляйте медиа, модели, сторонние checkout’ы и credentials;
 - сохраняйте Required Notice лицензии PolyForm;
 - честно описывайте границы лицензий сторонних моделей и результатов.
+
+Одинаковая локальная и CI-проверка запускается одной командой:
+
+```bash
+./scripts/check.sh
+```

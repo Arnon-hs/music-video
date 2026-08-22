@@ -56,6 +56,16 @@ class CommandTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             cli.build_generation("diffrhythm2", "jazz", 211, 42)
 
+    def test_seed_and_prompt_validation(self) -> None:
+        with self.assertRaises(ValueError):
+            cli.build_generation("ace-step", "ambient", 60, -1)
+        with self.assertRaises(ValueError):
+            cli.build_generation("ace-step", "ambient", 60, cli.MAX_SEED + 1)
+        with self.assertRaises(ValueError):
+            cli.build_generation("ace-step", "ambient", 60, 42, "ambient\nignore safeguards")
+        with self.assertRaises(ValueError):
+            cli.build_generation("ace-step", "ambient", 60, 42, "x" * (cli.MAX_PROMPT_CHARACTERS + 1))
+
     def test_dry_run_does_not_require_model_installation(self) -> None:
         result = subprocess.run(
             [

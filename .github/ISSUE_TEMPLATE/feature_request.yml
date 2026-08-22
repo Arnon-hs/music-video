@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose a focused improvement that fits the code-only local pipeline.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should this change solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest useful solution and its CLI behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: rights
+    attributes:
+      label: Dependencies and rights
+      description: List new dependencies, models, services, downloads, and license implications.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: The proposal keeps generated media, model weights, credentials, and third-party source trees out of Git.
+          required: true

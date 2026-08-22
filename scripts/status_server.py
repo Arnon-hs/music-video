@@ -18,7 +18,7 @@ STATUS = ROOT / "tmp" / "render-progress.txt"
 LOG = ROOT / "tmp" / "stable-audio3-albums-v4.log"
 OUTPUT = ROOT / "output" / "stable-audio3-albums-v4"
 MUSIC = ROOT / "assets" / "music" / "stable-audio3-albums-v4"
-HOST = os.environ.get("STATUS_HOST", "0.0.0.0")
+HOST = os.environ.get("STATUS_HOST", "127.0.0.1")
 PORT = int(os.environ.get("STATUS_PORT", "8765"))
 
 
@@ -114,6 +114,7 @@ code{word-break:break-all;color:#c4b5fd}ul{padding-left:20px;margin-bottom:0}
 <section class="card"><div>Ошибка / примечание</div><div id="error" class="muted" style="margin-top:10px;overflow-wrap:anywhere">—</div></section>
 <section class="card"><div>Журнал Stable Audio 3</div><pre id="log" class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;margin-bottom:0">загрузка…</pre></section></main>
 <script>
+const escapeHtml=s=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={starting:'запуск',loading_model:'загрузка модели',generating_music:'Stable Audio 3: генерация трека',assembling_track:'сборка трека',assembling_audio:'сведение альбома',rendering_video:'рендер видео',music_complete:'музыка готова',running:'рендер видео',complete:'готово',blocked:'ошибка'};
 function render(d){
  const state=d.state||'starting', music=Number(d.music_percent||0), videos=Number(d.completed||0), total=Number(d.total||10);
@@ -131,16 +132,16 @@ function render(d){
  document.querySelector('#audioTime').textContent=elapsed(d.music_started_at||d.track_started_at,d.music_finished_at);
  document.querySelector('#videoTime').textContent=state==='rendering_video'?elapsed(d.video_started_at):elapsed(d.video_started_at,d.video_finished_at);
  document.querySelector('#totalTime').textContent=elapsed(d.queue_started_at,d.queue_finished_at);
- const names=(d.video_names||'').split(',').filter(Boolean); document.querySelector('#files').innerHTML=names.length?names.map(n=>`<li><code>${n}</code></li>`).join(''):'<li class="muted">пока нет</li>';
+ const names=(d.video_names||'').split(',').filter(Boolean); document.querySelector('#files').innerHTML=names.length?names.map(n=>`<li><code>${escapeHtml(n)}</code></li>`).join(''):'<li class="muted">пока нет</li>';
  const audio=(d.audio_names||'').split(',').filter(Boolean), audioBox=document.querySelector('#audioList');
- audioBox.className=audio.length?'':'muted'; const audioKey=audio.join('|'); if(audioBox.dataset.key!==audioKey){audioBox.dataset.key=audioKey;audioBox.innerHTML=audio.length?audio.map(n=>`<div style="margin-top:12px"><div><code>${n}</code></div><audio controls preload="none" style="width:100%;margin-top:6px" src="/media/audio/${encodeURIComponent(n)}"></audio></div>`).join(''):'готовых треков пока нет'};
+ audioBox.className=audio.length?'':'muted'; const audioKey=audio.join('|'); if(audioBox.dataset.key!==audioKey){audioBox.dataset.key=audioKey;audioBox.innerHTML=audio.length?audio.map(n=>`<div style="margin-top:12px"><div><code>${escapeHtml(n)}</code></div><audio controls preload="none" style="width:100%;margin-top:6px" src="/media/audio/${encodeURIComponent(n)}"></audio></div>`).join(''):'готовых треков пока нет'};
  const videoBox=document.querySelector('#videoList');
  const videoKey=names.join('|');
  if(videoBox.dataset.key!==videoKey){
   videoBox.dataset.key=videoKey;
   videoBox.innerHTML=names.length?names.map((n,i)=>{
    const src='/media/video/'+encodeURIComponent(n);
-   const safe=n.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+   const safe=escapeHtml(n);
    return `<div style="margin-top:16px"><div><strong>${i+1}. ${safe}</strong></div><video controls preload="metadata" style="width:100%;margin-top:8px;background:#000;border-radius:10px" src="${src}"></video></div>`;
   }).join(''):'<div id="videoHint" class="muted" style="margin-top:10px">готовых видео пока нет</div>';
  }
@@ -151,6 +152,17 @@ refresh();setInterval(refresh,2000);
 
 
 class Handler(BaseHTTPRequestHandler):
+    def end_headers(self) -> None:
+        self.send_header(
+            "Content-Security-Policy",
+            "default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; "
+            "media-src 'self'; frame-ancestors 'none'",
+        )
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        super().end_headers()
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         if parsed.path.startswith("/media/audio/") or parsed.path.startswith("/media/video/"):
@@ -160,10 +172,13 @@ class Handler(BaseHTTPRequestHandler):
             body = json.dumps(read_status(), ensure_ascii=False).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-        else:
+        elif parsed.path == "/":
             body = PAGE.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+        else:
+            self.send_error(404, "Not found")
+            return
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
@@ -191,10 +206,17 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 value = range_header[6:].split(",", 1)[0]
                 first, last = value.split("-", 1)
-                start = int(first or 0)
-                end = int(last) if last else size - 1
+                if not first:
+                    suffix_length = int(last)
+                    if suffix_length <= 0:
+                        raise ValueError
+                    start = max(0, size - suffix_length)
+                    end = size - 1
+                else:
+                    start = int(first)
+                    end = int(last) if last else size - 1
                 end = min(end, size - 1)
-                if start > end:
+                if start < 0 or end < 0 or start >= size or start > end:
                     raise ValueError
             except ValueError:
                 self.send_error(416, "Invalid range")

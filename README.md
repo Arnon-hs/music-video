@@ -28,6 +28,17 @@ This is a source-available community license, not an OSI-approved open-source li
 
 Third-party model code, weights, services, media, and generated outputs remain subject to their own licenses and rights. A permissive model-code license does not automatically clear model weights or generated music for publication.
 
+## Project health
+
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Support](SUPPORT.md)
+- [Changelog](CHANGELOG.md)
+- [Dependencies and supply-chain inventory](docs/DEPENDENCIES.md)
+
+The repository engineering baseline draws from [OpenSSF secure development guidance](https://best.openssf.org/Concise-Guide-for-Developing-More-Secure-Software), [Open Source Guides for maintainers](https://opensource.guide/best-practices/), [Linux Foundation open-source practice training](https://training.linuxfoundation.org/open-source-best-practice/), and the language/style references collected by [Kristories / awesome-guidelines](https://github.com/Kristories/awesome-guidelines). These practices are adopted without claiming that the PolyForm-licensed project is OSI Open Source.
+
 ## Quick start
 
 ```bash
@@ -107,7 +118,7 @@ Important flags:
 | `--genre` | genre slug; aliases include `classic`, `lo-fi`, and `dnb` |
 | `--duration` | output duration in seconds; backend limits are validated before launch |
 | `--seed` | deterministic generation seed |
-| `--prompt` | custom style prompt that replaces the selected genre description; the instrumental guard is still appended |
+| `--prompt` | custom style prompt, up to 2,000 characters without control characters; the instrumental guard is still appended |
 | `--video` | render an MP4 after audio generation |
 | `--force-cpu` | disable GPU/MPS use where supported |
 | `--allow-downloads` | explicitly allow DiffRhythm/Stable Audio to fetch missing model files |
@@ -155,14 +166,15 @@ The CLI is an orchestrator. Model code and weights are installed locally and are
 MusicGen is the simplest included setup path. Its code and weights have different licenses; the `facebook/musicgen-small` weights are CC-BY-NC 4.0, so this backend is always labelled `NON_COMMERCIAL_DEMO`.
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install --upgrade pip
+python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements-musicgen.txt
 
 ./music-video generate --backend musicgen --genre lofi --duration 60
 ```
 
 The first model download requires typing `DOWNLOAD_MODEL` in the underlying generator. MusicGen keeps its own explicit confirmation flow.
+
+The optional MusicGen environment pins its direct dependencies for safer review and security monitoring. Transitive resolution can still change. Rebuild the venv after dependency changes; do not reuse an environment created from older requirements.
 
 ### [ACE-Step / ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5)
 
@@ -316,6 +328,7 @@ set -a
 source .env
 set +a
 
+python3 scripts/postiz_upload_ready_videos.py --dry-run
 python3 scripts/postiz_upload_ready_videos.py
 ```
 
@@ -325,11 +338,11 @@ Watch for newly completed videos:
 python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 ```
 
-The script requests a top-level Postiz draft and private YouTube visibility. It stores local idempotency state in `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` is optional and is added to the draft only when explicitly configured. A draft is not proof that upload succeeded: verify the returned post ID and review the item in Postiz before any manual publication.
+`--dry-run` lists pending videos without requiring credentials or contacting Postiz. The real run requests a top-level Postiz draft and private YouTube visibility. It stores local idempotency state in `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` is optional and is added to the draft only when explicitly configured. The API endpoint must use HTTPS; plain HTTP is accepted only on loopback unless `POSTIZ_ALLOW_INSECURE_HTTP=1` is deliberately set after reviewing the network risk. A draft is not proof that upload succeeded: verify the returned post ID and review the item in Postiz before any manual publication.
 
 ## LAN status page
 
-The existing Stable Audio album queue can expose its detailed status page:
+The existing Stable Audio album queue binds to `127.0.0.1` by default. To expose its detailed status page to a trusted LAN explicitly:
 
 ```bash
 STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
@@ -365,3 +378,9 @@ Before a contribution:
 - do not add generated media, model files, third-party checkouts, or credentials;
 - preserve the PolyForm required notice;
 - document third-party license boundaries honestly.
+
+The canonical local/CI gate is:
+
+```bash
+./scripts/check.sh
+```

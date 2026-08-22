@@ -39,6 +39,8 @@ GENRE_ALIASES = {
     "drum-and-bass": "drum-and-bass",
     "hip-hop": "instrumental-hip-hop",
 }
+MAX_PROMPT_CHARACTERS = 2_000
+MAX_SEED = 2**32 - 1
 
 
 @dataclass(frozen=True)
@@ -93,11 +95,31 @@ def validate_duration(backend: str, duration: int) -> None:
         raise ValueError(f"{BACKENDS[backend]} supports at most {limits[backend]} seconds in one CLI run")
 
 
+def validate_seed(seed: int) -> None:
+    if not 0 <= seed <= MAX_SEED:
+        raise ValueError(f"Seed must be between 0 and {MAX_SEED}")
+
+
+def validate_custom_prompt(custom_prompt: str | None) -> str | None:
+    if custom_prompt is None:
+        return None
+    prompt = custom_prompt.strip()
+    if not prompt:
+        return None
+    if len(prompt) > MAX_PROMPT_CHARACTERS:
+        raise ValueError(f"Prompt must not exceed {MAX_PROMPT_CHARACTERS} characters")
+    if any(ord(character) < 32 or ord(character) == 127 for character in prompt):
+        raise ValueError("Prompt must not contain control characters")
+    return prompt
+
+
 def build_generation(backend: str, genre: str, duration: int, seed: int, custom_prompt: str | None = None) -> Generation:
     validate_duration(backend, duration)
+    validate_seed(seed)
+    custom_prompt = validate_custom_prompt(custom_prompt)
     catalog = load_catalog()
-    if custom_prompt and custom_prompt.strip():
-        prompt = f"{custom_prompt.strip()} {catalog['instrumental_guard']}"
+    if custom_prompt:
+        prompt = f"{custom_prompt} {catalog['instrumental_guard']}"
     else:
         prompt = genre_prompt(genre)
     environment = os.environ.copy()
