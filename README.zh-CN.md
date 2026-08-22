@@ -2,45 +2,13 @@
 
 [English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
 
-这是一个仅包含代码的本地工具集，用于生成纯器乐音乐、跟踪生成进度、制作音乐视频、在局域网中预览结果，以及通过 Postiz 创建私密的 YouTube 草稿。
+只需在终端输入一段音乐描述，即可生成纯器乐曲目，或制作完整的一小时播放列表视频。您可以选择流派和本地模型、查看真实进度，并在需要时通过 Postiz 把成品保存为私密 YouTube 草稿。
 
-Git 仓库只保存编排代码和安全配置。生成的音频/视频、图片、模型权重、第三方源码目录、虚拟环境、日志、临时文件和真实凭据均不会提交到 Git。
+本项目坚持 code-only 和 local-first：音乐、图片、模型权重、虚拟环境、日志和真实 API 密钥都不会进入 Git。
 
-## 功能
+## 快速开始：从克隆到第一次 dry-run
 
-- 交互式终端向导：不带参数运行 `./music-video`；
-- 面向用户、LLM 和 coding agent 的 CLI；
-- 12 种无声乐流派：techno、lo-fi、classical、electronic、ambient、house、synthwave、jazz、drum & bass、cinematic、chillout 和 instrumental hip-hop；
-- MusicGen、ACE-Step、DiffRhythm 2 和 Stable Audio 3 适配器；
-- 在终端中显示当前阶段、可信进度数据存在时的百分比、已用时间和后端输出；
-- 可选：使用本地图片合成 MP4；
-- 使用同一流派、不同长度的曲目、淡入淡出过渡和一张适配图片制作一小时播放列表视频；
-- `genres`、`doctor` 和 `status` 命令支持 JSON 输出；
-- 通过 Postiz 创建私密草稿；
-- CLI 不会在后台自动下载模型或媒体文件。
-
-## 许可证
-
-Copyright 2026 Vasilii Bereznikov.
-
-本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。在保留许可证和必要版权声明的前提下，您可以为许可证允许的非商业目的使用、研究、修改和向社区分享代码。
-
-这是一个面向社区的 source-available 许可证，但不是 OSI 认可的开源许可证。项目有意不采用 Apache-2.0，因为 Apache-2.0 允许商业使用。商业使用本仓库需要另行取得所有者许可。
-
-第三方模型代码、权重、服务、媒体和生成结果分别受其自身许可证和权利约束。模型代码采用宽松许可证，并不代表模型权重或生成音乐自动获得发布许可。
-
-## 项目健康状况
-
-- [贡献指南](CONTRIBUTING.md)
-- [安全策略](SECURITY.md)
-- [行为准则](CODE_OF_CONDUCT.md)
-- [支持](SUPPORT.md)
-- [变更日志](CHANGELOG.md)
-- [依赖项和供应链清单](docs/DEPENDENCIES.md)
-
-本项目的工程基线参考了 [OpenSSF 安全开发指南](https://best.openssf.org/Concise-Guide-for-Developing-More-Secure-Software)、面向维护者的 [Open Source Guides](https://opensource.guide/best-practices/)、[Linux Foundation 开源最佳实践培训](https://training.linuxfoundation.org/open-source-best-practice/) 以及 [Kristories / awesome-guidelines](https://github.com/Kristories/awesome-guidelines) 汇总的语言和风格指南。采用这些实践并不代表使用 PolyForm 许可证的本项目是 OSI Open Source。
-
-## 快速开始
+### 1. 打开项目并检查当前环境
 
 ```bash
 git clone git@github.com:Arnon-hs/music-video.git
@@ -48,19 +16,127 @@ cd music-video
 
 ./music-video doctor
 ./music-video genres
+```
+
+`doctor` 会检查 FFmpeg 和模型环境。如果某个 backend 显示缺失，只需安装您真正想用的那个，不必一次安装全部模型。
+
+### 2. 先预览一个小任务
+
+```bash
+./music-video generate \
+  --backend ace-step \
+  --genre lofi \
+  --duration 60 \
+  --dry-run
+```
+
+Dry-run 会显示 prompt、输出路径和实际命令，但不会加载模型或生成媒体。
+
+### 3. 正式运行，或使用终端向导
+
+确认计划后删除 `--dry-run`，也可以启动交互式流程：
+
+```bash
 ./music-video
 ```
 
-交互模式会引导您：
+## 选择最适合您的入口
 
-1. 选择音乐流派；
-2. 选择已安装的 backend；
-3. 设置时长；
-4. 可选：使用 `assets/images` 中的图片制作视频；
-5. 可选：强制使用 CPU；
-6. 查看生成进度，直到终端显示最终文件路径。
+| 我想要…… | 从这里开始 | 得到的结果 |
+|---|---|---|
+| 不安装模型先看看 | `./music-video genres` 和 `--dry-run` | 已验证的命令和 prompt |
+| 生成一首纯器乐曲目 | `./music-video generate ...` | `assets/music` 中的 WAV 或 MP3 |
+| 给曲目添加封面 | 加上 `--video`，图片放入 `assets/images` | `output` 中的 MP4 |
+| 制作一小时混音 | `./music-video playlist ...` | 同流派的多首不同曲目和 3600 秒 MP4 |
+| 让 agent 操作 CLI | 使用下面的 prompt 和 skill | 有边界、可观察的工作流 |
+| 准备 YouTube 上传 | 先运行 Postiz `--dry-run` | 可供人工检查的私密草稿 |
 
-## 使用 CLI
+## 可直接交给 coding agent 的请求
+
+替换尖括号中的内容，然后粘贴到 Codex、Claude Code 或其他本地 agent：
+
+```text
+在此仓库中工作，并让所有生成文件保留在本地。
+1. 运行 ./music-video doctor --json 和 ./music-video genres --json。
+2. 为 <genre> 选择 ready: true 的 backend。
+3. 使用 <backend> 准备 <60 秒曲目 | 一小时播放列表视频>。
+   只有需要视频时才使用 assets/images/<cover-file>。
+4. 先展示完整的 --dry-run。未经我确认，不要下载模型或媒体。
+5. 确认后只运行一个有明确边界的任务，并报告真实的
+   ./music-video status --json。
+6. 用 ffprobe 检查时长和媒体流，并让我试听/检查。
+7. 不要上传或发布。如果之后使用 Postiz，先运行 --dry-run，
+   并且只创建私密草稿。
+```
+
+## 连接到 Codex 工作会话
+
+仓库已包含 `.agents/skills/music-video-generator` skill。它告诉 agent 如何检查 backend、要求 dry-run、生成曲目/播放列表、验证媒体、使用远程 GPU，以及确保 Postiz 始终停留在私密草稿阶段。
+
+### 只在本仓库使用——无需安装
+
+1. 在 Codex 中把仓库根目录作为 workspace 打开。
+2. 从该目录创建新任务；Codex 会发现 `.agents/skills` 下的 repo-scoped skill。
+3. 显式输入 `$music-video-generator`，或直接用自然语言请求一首曲目/播放列表。
+
+```text
+Use $music-video-generator. Check doctor and genres, then show a dry-run
+for a one-hour lo-fi playlist with cover.jpg. Do not install, download,
+upload, or publish anything yet.
+```
+
+### 在所有 Codex workspace 中使用
+
+```bash
+./scripts/install_codex_skill.sh
+```
+
+安装脚本会创建 `~/.agents/skills/music-video-generator` 符号链接，并拒绝覆盖已有路径。如果 skill 没有出现，请重启客户端。断开时只删除链接：
+
+```bash
+unlink ~/.agents/skills/music-video-generator
+```
+
+详情请参阅 [OpenAI 官方 skills 指南](https://developers.openai.com/codex/skills/)。目前单仓库工作流不需要单独的 app/plugin；只有在需要公开安装、多个 skills 或打包 connectors 时，plugin 才更合适。
+
+Skill 不会自行下载模型或租用 GPU。此类操作会产生费用或改变外部状态，因此必须获得用户明确确认。
+
+## 优势与限制
+
+| 优势 | 限制 |
+|---|---|
+| 一个 CLI 支持四个 backend 和 12 个纯器乐流派 | 模型代码和权重需要单独安装 |
+| dry-run、进度、JSON status 和可恢复的播放列表 | 生成速度可能很慢，并消耗大量内存 |
+| 单曲视频或使用不裁剪封面的精确一小时视频 | 不是时间线编辑器：只有一张静态图片，没有动画场景 |
+| 每个 prompt 都追加无声乐和原创性约束 | 模型仍可能产生类似人声的声音或 Content ID 风险 |
+| 本地文件与私密 Postiz 草稿 | 尚无内置的远程音乐生成 HTTP API |
+
+## 本机、RunPod 还是 API？
+
+| 模式 | 现在可用？ | 工作方式 |
+|---|---|---|
+| 本地 Mac/Linux | 是 | 本地安装一个 backend，直接运行 CLI |
+| RunPod Pod 或 GPU VPS | 是 | 把它当作远程 Linux 工作站：SSH、持久磁盘、同一个 CLI，验证后复制回本机 |
+| RunPod Serverless 生成 API | 暂未提供 | 仍需要容器镜像、handler、产物存储、身份验证和队列控制 |
+| LLM API | 自行接入 | LLM 只生成 prompt，再通过 `--prompt` 传入；本项目不保存 LLM 密钥 |
+| Pexels API | 可选 | 查找候选图片，下载仍需明确确认 |
+| Postiz API | 可选 | 接收成品 MP4 并创建私密草稿，不负责生成音乐 |
+
+RunPod 的简短流程：从 PyTorch 模板创建普通 GPU Pod，把持久存储挂载到 `/workspace`，通过 SSH 登录，克隆仓库，只安装一个 backend，然后先运行 `doctor` 和 `--dry-run`。长任务放在 `tmux` 中，通过 `./music-video status --json` 查看进度；使用 `ffprobe` 验证文件，再用 `scp` 下载。确认结果已经安全复制后再停止 GPU；在确认持久文件之前不要删除 Pod 或 volume。
+
+完整命令、存储建议，以及 Vast.ai/通用 NVIDIA VPS 方案请查看[远程 GPU 指南](docs/REMOTE_GPU.md)。普通 Pod/VPS 是目前推荐的入口，因为现有适配器依赖本地文件和长时间运行的进程。要把 RunPod Serverless 变成真正的 API，还需要单独实现 worker。
+
+## 许可证与权利
+
+Copyright 2026 Vasilii Bereznikov.
+
+本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。保留许可证和版权声明后，可以为许可的非商业目的使用、研究、修改和向社区分享代码。
+
+这是面向社区的 source-available 许可证，但不是 OSI 认可的开源许可证。项目没有采用 Apache-2.0，因为它允许商业使用。商业使用需要另行取得所有者许可。
+
+模型、权重、API、图片和生成结果各有自己的许可证和权利边界。发布前请检查所选模型和每个媒体资产；本项目的代码许可证不会自动解决模型权重或生成音乐的发布权利。
+
+## 常用 CLI 示例
 
 ```bash
 ./music-video --help
@@ -153,7 +229,7 @@ CLI 会通过 `ffprobe` 检查已有曲目的时长并复用有效文件，因�
 
 流派配置位于 [`config/genres.json`](config/genres.json)。每个内置或自定义 prompt 都会追加以下限制：禁止人声、讲话、说唱、合唱、吟唱、voice samples、模仿艺术家以及可识别的受版权保护旋律。
 
-## 进度和文件
+## 查看任务进度与输出文件
 
 CLI 会显示当前阶段、可信数据存在时的百分比、当前 segment/diffusion step、已用时间、日志行和最终路径。
 
@@ -175,9 +251,26 @@ metadata/                       本地报告和素材许可证
 models/ 和 .models/             模型权重和第三方仓库
 ```
 
-## Backend 和 LLM
+## 选择模型
 
 CLI 只负责调度本地模型。本仓库不包含模型代码和权重。
+
+| Backend | 适合的首次用途 | 单曲 CLI 上限 | 实际注意事项 | 权利提示 |
+|---|---|---:|---|---|
+| MusicGen | 简单演示与 lo-fi 实验 | 3600 秒 | Python 3.11；MPS/CPU fallback 可能很慢 | `facebook/musicgen-small` 权重为 CC-BY-NC 4.0，输出标记为 `NON_COMMERCIAL_DEMO` |
+| ACE-Step | 较长原创曲目和播放列表 | 600 秒 | 当前适配器需要已验证的本地 v1 目录；CPU 用于稳定 fallback，而不是提速 | 检查精确 checkpoint/版本和生成结果 |
+| DiffRhythm 2 | 短曲目与多曲目播放列表 | 210 秒 | 默认 offline；纯器乐 prompt 仍可能产生类似人声 | 分别检查代码、权重和输出权利 |
+| Stable Audio 3 | ambient/electronic 与 continuation | 234 秒 | 当前适配器面向 Small-Music，并生成两个 segment | 检查所选模型许可证和发布权利 |
+
+### 对硬件的合理预期
+
+- 首次任务建议 30–60 秒。`doctor` 成功只说明路径存在，不代表速度、内存余量或音乐质量。
+- 在 16 GB Apple Silicon Mac 上一次只运行一个 backend，并为项目磁盘和 macOS 系统卷保留空间；CPU fallback 会明显更慢。
+- 对租用的 NVIDIA 机器，在尚未测试精确模型时，24 GB VRAM 可作为保守起点，但不是保证的最低要求。较小 GPU 可能通过 offload/quantization 工作，但本项目不会自动配置所有 upstream 优化。
+- 某些 backend 可以使用纯 CPU，但一小时播放列表需要先生成许多独立曲目，因此可能耗时很久。
+- 持久磁盘需要容纳仓库、Python 环境、模型权重、缓存、曲目、临时音频和最终 MP4。
+
+请按照所选模型精确版本的 upstream 指南安装，然后再次运行 `./music-video doctor`。不要假设最新 upstream 版本必然兼容当前适配器。
 
 ### [facebookresearch / AudioCraft (MusicGen)](https://github.com/facebookresearch/audiocraft)
 
@@ -242,7 +335,7 @@ Instrumental mode 通过 prompt 和 `[inst]` 结构设置。生成后仍需试�
 
 默认情况下，CLI 会为此 backend 启用 Hugging Face offline mode。只有在检查模型和预期下载大小后，才应添加 `--allow-downloads`。
 
-## 与 LLM 配合使用
+## 接入您自己的 LLM
 
 LLM 应只准备 style prompt，不应生成可执行代码或 credentials。建议使用以下约定：
 
@@ -261,7 +354,7 @@ rhythm, arrangement, and mix characteristics.
   --prompt "<LLM prompt>" --duration 60 --dry-run
 ```
 
-## 与 coding agent 配合使用
+## Agent 安全检查清单
 
 Codex、Claude Code 或其他本地 agent 的安全操作顺序：
 
@@ -276,16 +369,9 @@ Codex、Claude Code 或其他本地 agent 的安全操作顺序：
 9. 不提交 `.env`、媒体、模型、checkpoint 和日志；
 10. 未经用户明确要求，不上传或发布任何内容。
 
-可直接交给 agent 的请求：
+如果希望更快开始，请调用 `$music-video-generator`，并使用本指南开头的完整请求。Repo skill 会自动应用此检查清单。
 
-```text
-在此仓库中运行 ./music-video doctor --json 和 genres --json。
-使用 <backend> 准备一段 60 秒、<genre> 流派的纯器乐音乐。
-先展示 dry-run。未经我的明确确认，不要下载模型或媒体，
-不要上传或发布任何内容。显示真实的 status --json，并验证最终文件。
-```
-
-## 图片和视频
+## 添加封面并制作 MP4
 
 将您拥有使用权的图片放入 `assets/images`，或先使用 Pexels 搜索：
 
@@ -300,7 +386,7 @@ export PEXELS_API_KEY='your_key'
 ./music-video generate --backend ace-step --genre synthwave --duration 90 --video
 ```
 
-## Postiz 和私密 YouTube 草稿
+## 把成品发送到 Postiz
 
 个人配置只能从环境变量读取。代码中不再包含 integration ID 或 API key。
 
@@ -331,7 +417,7 @@ python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 
 `--dry-run` 无需 credentials，也不会请求 Postiz，只会显示待处理的视频。真实运行会创建 top-level draft 并请求 YouTube 私密可见性，幂等状态保存在 `tmp/postiz-uploaded.json`。`POSTIZ_LOCAL_BASE_URL` 是可选项，只有明确配置后才会写入草稿。API 必须使用 HTTPS；仅在 loopback 场景中可使用 HTTP，或者在评估网络风险后明确设置 `POSTIZ_ALLOW_INSECURE_HTTP=1`。收到响应后，必须检查 post ID 和 Postiz 中的实际草稿，再手动发布。
 
-## 局域网状态页面
+## 可选：从其他设备查看状态
 
 服务器默认只监听 `127.0.0.1`。如需在可信局域网中明确访问现有 Stable Audio 队列：
 
@@ -341,7 +427,7 @@ STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
 
 在同一网络中打开 `http://<计算机IP>:8765`。没有单独的身份验证时，请勿将此服务器暴露到互联网。
 
-## 底层脚本
+## 高级用法：手动队列脚本
 
 CLI 是主要入口。原有队列命令仍然可用：
 
@@ -353,7 +439,7 @@ CLI 是主要入口。原有队列命令仍然可用：
 ./scripts/render_one_hour_album.sh
 ```
 
-## 开发和验证
+## 开发与验证修改
 
 ```bash
 python3 -m unittest discover -s tests -v

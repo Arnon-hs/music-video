@@ -2,45 +2,13 @@
 
 [English](README.md) · [Русский](README.ru.md) · [简体中文](README.zh-CN.md)
 
-Local, code-only toolkit for generating instrumental music, tracking generation progress, assembling music videos, previewing results on a LAN, and creating private YouTube drafts through Postiz.
+Turn a music prompt into an instrumental track—or a full one-hour playlist video—without leaving your terminal. Pick a genre, choose a local model, watch real progress, and optionally turn the result into a private YouTube draft through Postiz.
 
-The repository contains orchestration code and safe configuration only. Generated audio/video, images, model weights, third-party source trees, virtual environments, logs, temporary files, and real credentials are excluded from Git.
+This is a code-only, local-first project. Your music, images, model weights, logs, virtual environments, and real API keys stay outside Git.
 
-## Features
+## Start here: from clone to first dry-run
 
-- interactive terminal wizard: run `./music-video` with no arguments;
-- scriptable CLI for people, LLMs, and coding agents;
-- 12 voice-free genres, including techno, lo-fi, classical, electronic, ambient, house, synthwave, jazz, drum & bass, cinematic, chillout, and instrumental hip-hop;
-- MusicGen, ACE-Step, DiffRhythm 2, and Stable Audio 3 adapters;
-- live stage, percentage when available, elapsed time, and backend output in the terminal;
-- optional MP4 assembly from local images;
-- one-hour playlist videos with varied same-genre tracks, crossfades, and one fitted image;
-- machine-readable `genres`, `doctor`, and `status` output;
-- private Postiz/YouTube draft workflow;
-- no model or media downloads without the underlying tool's explicit action.
-
-## License
-
-Copyright 2026 Vasilii Bereznikov.
-
-This project uses the [PolyForm Noncommercial License 1.0.0](LICENSE). You may use, study, modify, and share the code for permitted noncommercial purposes, provided that the license and required notice remain with distributed copies.
-
-This is a source-available community license, not an OSI-approved open-source license. Apache-2.0 was intentionally not used because it permits commercial use. Commercial use is not granted by this repository license and requires separate permission from the owner.
-
-Third-party model code, weights, services, media, and generated outputs remain subject to their own licenses and rights. A permissive model-code license does not automatically clear model weights or generated music for publication.
-
-## Project health
-
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Support](SUPPORT.md)
-- [Changelog](CHANGELOG.md)
-- [Dependencies and supply-chain inventory](docs/DEPENDENCIES.md)
-
-The repository engineering baseline draws from [OpenSSF secure development guidance](https://best.openssf.org/Concise-Guide-for-Developing-More-Secure-Software), [Open Source Guides for maintainers](https://opensource.guide/best-practices/), [Linux Foundation open-source practice training](https://training.linuxfoundation.org/open-source-best-practice/), and the language/style references collected by [Kristories / awesome-guidelines](https://github.com/Kristories/awesome-guidelines). These practices are adopted without claiming that the PolyForm-licensed project is OSI Open Source.
-
-## Quick start
+### 1. Open the project and check what is ready
 
 ```bash
 git clone git@github.com:Arnon-hs/music-video.git
@@ -48,19 +16,132 @@ cd music-video
 
 ./music-video doctor
 ./music-video genres
+```
+
+`doctor` shows FFmpeg and the model environments already available on this machine. A backend marked as missing needs its own local setup before it can generate audio.
+
+### 2. Preview a small job before spending model time
+
+```bash
+./music-video generate \
+  --backend ace-step \
+  --genre lofi \
+  --duration 60 \
+  --dry-run
+```
+
+A dry-run prints the prompt, output path, and exact command. It does not load a model or generate media.
+
+### 3. Run it—or use the guided terminal UI
+
+Remove `--dry-run` when the plan looks right, or start the interactive flow:
+
+```bash
 ./music-video
 ```
 
-The no-argument command starts a small interactive UI:
+The UI walks you through the result you want, genre, installed backend, duration, image/video choice, CPU fallback, and download permission.
 
-1. choose a genre;
-2. choose an installed backend;
-3. choose duration;
-4. optionally build a video from `assets/images`;
-5. optionally force CPU mode;
-6. watch progress until the final path is printed.
+## Pick your route
 
-## CLI reference
+| I want to… | Start with | Result |
+|---|---|---|
+| explore without a model | `./music-video genres` and a `--dry-run` | validated command and prompt |
+| make one instrumental track | `./music-video generate ...` | WAV or MP3 in `assets/music` |
+| add artwork to a track | add `--video` and place an image in `assets/images` | MP4 in `output` |
+| build a one-hour mix | `./music-video playlist ...` | varied same-genre tracks plus a 3,600-second MP4 |
+| let an agent operate the CLI | use the copy-ready request below | bounded, observable workflow |
+| prepare a YouTube upload | run the Postiz script with `--dry-run` first | private draft for human review |
+
+## Give this to your coding agent
+
+Replace the placeholders and paste this into Codex, Claude Code, or another local agent:
+
+```text
+Work in this repository and keep all generated files local.
+1. Run ./music-video doctor --json and ./music-video genres --json.
+2. Choose a backend with ready: true for <genre>.
+3. Prepare <a 60-second track | a one-hour playlist video> using
+   <backend>. Use assets/images/<cover-file> only if video is requested.
+4. Show the complete --dry-run first. Do not download models or media
+   without my approval.
+5. After approval, run one bounded job and report the real output from
+   ./music-video status --json.
+6. Verify duration and streams with ffprobe, and ask me to listen/review.
+7. Do not upload or publish anything. If I later request Postiz, run its
+   --dry-run first and create only a private draft.
+```
+
+## Connect the project to a Codex work session
+
+The repository includes a ready-to-use skill at `.agents/skills/music-video-generator`. This is the lightest integration: it teaches the agent how to inspect backends, require dry-runs, generate tracks/playlists, verify media, use a remote GPU, and keep Postiz private.
+
+### Use it inside this repository—no installation
+
+1. Clone the repository and open its root as the Codex workspace.
+2. Start a new task from that folder. Codex discovers repository skills under `.agents/skills`.
+3. Invoke it explicitly with `$music-video-generator`, or ask naturally for a track or playlist and let Codex match the skill.
+
+Example first request:
+
+```text
+Use $music-video-generator. Inspect this checkout, show doctor and genres,
+then prepare a dry-run for a one-hour lo-fi playlist with cover.jpg.
+Do not install, download, upload, or publish anything yet.
+```
+
+### Make it available from any Codex workspace
+
+Run the included installer once:
+
+```bash
+./scripts/install_codex_skill.sh
+```
+
+It creates a symlink at `~/.agents/skills/music-video-generator`, so updates from this checkout are picked up without copying the skill. It refuses to overwrite an existing path. Codex normally detects skill changes automatically; restart the client if the skill does not appear. To disconnect only this symlink:
+
+```bash
+unlink ~/.agents/skills/music-video-generator
+```
+
+See the [official OpenAI skill guide](https://developers.openai.com/codex/skills/) for discovery locations and invocation. A plugin is unnecessary for this single repo workflow; package it as a plugin later only if you need public installation, multiple skills, or bundled connectors.
+
+The skill does not install models or rent infrastructure by itself. Those remain explicit, cost-bearing actions that require user approval.
+
+## Why use it—and where it stops
+
+| Advantages | Limitations |
+|---|---|
+| One CLI for four local music backends and 12 instrumental genres | Model code and weights are not bundled; each backend needs its own setup |
+| Safe preview with `--dry-run`, visible progress, JSON status, and resumable playlists | Generation can be slow and memory-heavy, especially for one-hour playlists |
+| Single-track MP4 and exact one-hour video with a fitted, uncropped image | The current video is intentionally simple: one image, no timeline editor or animated scene generation |
+| Instrumental and originality guards are added to every prompt | A prompt cannot guarantee zero vocal-like sounds or clear every copyright/Content ID risk |
+| Local-first files and private Postiz drafts | There is no built-in remote music-generation HTTP API and no automatic publication |
+
+## Local machine, remote GPU, or API?
+
+| Mode | Available now? | How it works |
+|---|---|---|
+| Local Mac/Linux workstation | Yes | Install one backend locally and run the CLI directly |
+| RunPod Pod or GPU VPS | Yes | Treat it as a remote Linux workstation: SSH, persistent disk, same CLI, copy the verified result home |
+| RunPod Serverless generation API | Not yet | Needs a container image, handler, artifact storage, authentication, and queue controls |
+| LLM API | Bring your own | Ask any LLM for a prompt, then pass plain text through `--prompt`; this repo stores no LLM key and calls no LLM provider |
+| Pexels API | Optional | Finds candidate images; download still requires explicit confirmation |
+| Postiz API | Optional | Uploads a finished MP4 and creates a private draft; it does not generate music |
+
+For the supported remote workflow, follow [RunPod or another GPU host](docs/REMOTE_GPU.md). A normal Pod/VM is the recommended first step because the current adapters expect local files and long-running processes.
+
+## License and rights
+
+Copyright 2026 Vasilii Bereznikov.
+
+This project uses the [PolyForm Noncommercial License 1.0.0](LICENSE). You may use, study, modify, and share the code for permitted noncommercial purposes, provided that the license and required notice remain with distributed copies.
+
+This is a source-available community license, not an OSI-approved open-source license. Apache-2.0 was intentionally not used because it permits commercial use. Commercial use of this repository requires separate permission from the owner.
+
+Model code, weights, APIs, images, and generated outputs keep their own license and rights boundaries. Always review the selected model and every media asset before publishing; a permissive code license does not automatically clear model weights or generated music.
+
+## Everyday CLI recipes
 
 ```bash
 ./music-video --help
@@ -153,7 +234,7 @@ Important flags:
 
 Genre definitions live in [`config/genres.json`](config/genres.json). Every built-in or custom prompt is combined with a strict instrumental guard that excludes vocals, speech, rap, choir, chants, voice samples, artist imitation, and recognisable copyrighted melodies.
 
-## Progress and outputs
+## Watch the job and find your files
 
 During generation the CLI shows:
 
@@ -184,9 +265,26 @@ models/ and .models/           model weights and third-party checkouts
 
 For `--video`, place at least one `.jpg`, `.jpeg`, `.png`, or `.webp` file in `assets/images`, or run the reviewed Pexels workflow described below.
 
-## Backends and LLMs
+## Choose a model
 
-The CLI is an orchestrator. Model code and weights are installed locally and are never committed to this repository.
+The CLI is an orchestrator: the model runs on the machine where you launch the command. Model code and weights are installed separately and are never committed to this repository.
+
+| Backend | Good first use | CLI limit per track | Practical note | Rights note |
+|---|---|---:|---|---|
+| MusicGen | easiest included demo path, lo-fi experiments | 3,600 s | Python 3.11 environment; MPS/CPU fallback can be slow and needs local model cache | `facebook/musicgen-small` weights are CC-BY-NC 4.0; output is labelled `NON_COMMERCIAL_DEMO` |
+| ACE-Step | longer original tracks and playlist work | 600 s | current adapter expects the exact local v1 layout; CPU is a stability fallback, not a speed option | verify the exact checkpoint/version and generated output before use |
+| DiffRhythm 2 | short songs and many-track playlists | 210 s | offline by default; instrumental prompting can still produce vocal-like sound | verify code, weights, and output rights separately |
+| Stable Audio 3 | ambient/electronic tracks and continuation-based playlists | 234 s | current adapter targets Small-Music and two generated segments | verify the selected model license and publication rights |
+
+### What to expect from your hardware
+
+- Start with a 30–60 second job. A successful `doctor` only proves paths exist; it does not prove speed, memory headroom, or artistic quality.
+- On a 16 GB Apple Silicon Mac, run one backend at a time, keep free space on both the project disk and macOS system volume, and expect CPU fallback to be much slower. `--force-cpu` is useful for stability testing.
+- For a rented NVIDIA machine, a 24 GB VRAM class is a conservative first choice when you have not benchmarked the exact model. Smaller GPUs may work with offload/quantization, but the current project adapters do not configure every upstream optimization automatically.
+- CPU-only generation is possible for some backends, but a one-hour playlist can take a long time because it creates many independent tracks before FFmpeg starts.
+- Disk use includes the repository, Python environment, model weights, caches, generated tracks, temporary audio, and final MP4. Keep important outputs on persistent storage.
+
+Always follow the upstream installation guide for the exact model version, then return to `./music-video doctor`. Do not assume that a newer upstream release is compatible with the current adapter.
 
 ### [facebookresearch / AudioCraft (MusicGen)](https://github.com/facebookresearch/audiocraft)
 
@@ -264,7 +362,7 @@ The current one-track adapter limits a run to 234 seconds. Longer albums are ass
 
 The CLI enables Hugging Face offline mode by default for this backend. Add `--allow-downloads` only after reviewing the expected model and size.
 
-## Working with an LLM
+## Bring your own LLM
 
 An LLM should produce a style prompt, not executable code or credentials. Keep the selected genre as a stable category and pass the detailed prompt through `--prompt`.
 
@@ -285,7 +383,7 @@ Inspect the generated command before spending model time:
   --prompt "<LLM prompt>" --duration 60 --dry-run
 ```
 
-## Working with a coding agent
+## Agent safety checklist
 
 Use this safe sequence for Codex, Claude Code, or another local agent:
 
@@ -300,17 +398,9 @@ Use this safe sequence for Codex, Claude Code, or another local agent:
 9. never commit `.env`, media, models, checkpoints, logs, or generated output;
 10. never upload or publish unless the user explicitly requests it.
 
-Copy-ready agent request:
+For an even shorter start, invoke `$music-video-generator` and use the copy-ready request near the top of this guide. The repository skill applies this checklist automatically.
 
-```text
-In this repository, run ./music-video doctor --json and genres --json.
-Prepare a 60-second instrumental <genre> generation using <backend>.
-Show the dry-run command first. Do not download models/media, upload files,
-or publish anything without my explicit approval. During execution, report
-the exact status from ./music-video status --json and verify the output.
-```
-
-## Images and video
+## Add artwork and build the MP4
 
 Use your own cleared images by placing them in `assets/images`, or search Pexels candidates:
 
@@ -329,7 +419,7 @@ With images ready:
 
 The CLI creates a temporary visual loop and uses a full H.264 re-encode for the final MP4.
 
-## Postiz and private YouTube drafts
+## Send the finished video to Postiz
 
 The uploader reads all account-specific values from environment variables. No integration ID or API key is stored in source code.
 
@@ -367,7 +457,7 @@ python3 scripts/postiz_upload_ready_videos.py --watch --interval 30
 
 `--dry-run` lists pending videos without requiring credentials or contacting Postiz. The real run requests a top-level Postiz draft and private YouTube visibility. It stores local idempotency state in `tmp/postiz-uploaded.json`. `POSTIZ_LOCAL_BASE_URL` is optional and is added to the draft only when explicitly configured. The API endpoint must use HTTPS; plain HTTP is accepted only on loopback unless `POSTIZ_ALLOW_INSECURE_HTTP=1` is deliberately set after reviewing the network risk. A draft is not proof that upload succeeded: verify the returned post ID and review the item in Postiz before any manual publication.
 
-## LAN status page
+## Optional: preview from another device
 
 The existing Stable Audio album queue binds to `127.0.0.1` by default. To expose its detailed status page to a trusted LAN explicitly:
 
@@ -377,7 +467,7 @@ STATUS_HOST=0.0.0.0 STATUS_PORT=8765 python3 scripts/status_server.py
 
 Open `http://<computer-ip>:8765` from the same local network. Do not expose this unauthenticated development server directly to the internet.
 
-## Low-level scripts
+## Advanced: manual queue scripts
 
 The CLI is the recommended entry point. The original scripts remain available for album queues and manual control:
 
@@ -389,7 +479,7 @@ The CLI is the recommended entry point. The original scripts remain available fo
 ./scripts/render_one_hour_album.sh
 ```
 
-## Development and verification
+## Develop and verify
 
 ```bash
 python3 -m unittest discover -s tests -v

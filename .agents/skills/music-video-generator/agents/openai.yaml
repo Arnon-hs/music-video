@@ -1,0 +1,7 @@
+interface:
+  display_name: "Music Video Generator"
+  short_description: "Generate and verify local music videos"
+  default_prompt: "Use $music-video-generator to inspect this project and prepare a safe dry-run for an instrumental track or one-hour playlist."
+
+policy:
+  allow_implicit_invocation: true
