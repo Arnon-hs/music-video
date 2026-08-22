@@ -28,7 +28,7 @@ For generation changes, show a bounded dry-run before using model time:
 ./music-video generate --backend <backend> --genre <genre> --duration 60 --dry-run
 ```
 
-Tests must cover success and relevant failure cases. User-facing changes must update both `README.md` and `README.ru.md`.
+Tests must cover success and relevant failure cases. User-facing changes must update `README.md`, `README.ru.md`, and `README.zh-CN.md`.
 
 ## Repository boundaries
 

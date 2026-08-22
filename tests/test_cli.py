@@ -100,6 +100,59 @@ class CommandTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertGreaterEqual(len(payload), 10)
 
+    def test_playlist_duration_plan_is_varied_and_exactly_one_hour(self) -> None:
+        for backend in cli.BACKENDS:
+            count = cli.auto_playlist_track_count(backend, cli.DEFAULT_CROSSFADE_SECONDS)
+            durations = cli.plan_track_durations(backend, count, cli.DEFAULT_CROSSFADE_SECONDS)
+            self.assertGreater(len(set(durations)), 1)
+            self.assertLessEqual(max(durations), cli.BACKEND_DURATION_LIMITS[backend])
+            timeline = sum(durations) - cli.DEFAULT_CROSSFADE_SECONDS * (count - 1)
+            self.assertEqual(timeline, cli.PLAYLIST_SECONDS)
+
+    def test_playlist_rejects_too_few_tracks_for_backend(self) -> None:
+        with self.assertRaisesRegex(ValueError, "use at least"):
+            cli.plan_track_durations("diffrhythm2", 12, cli.DEFAULT_CROSSFADE_SECONDS)
+
+    def test_playlist_ffmpeg_uses_one_image_without_crop_or_stretch(self) -> None:
+        generations = tuple(
+            cli.build_generation("ace-step", "lofi", duration, 42 + index)
+            for index, duration in enumerate(cli.plan_track_durations("ace-step", 12, 3))
+        )
+        plan = cli.PlaylistPlan(
+            "ace-step", "lofi", ROOT / "assets" / "images" / "cover.jpg",
+            ROOT / "output" / "playlist.mp4", 3, generations,
+        )
+        command = cli.playlist_ffmpeg_command(plan)
+        joined = " ".join(command)
+        self.assertIn("force_original_aspect_ratio=decrease", joined)
+        self.assertIn("pad=1280:720", joined)
+        self.assertIn("acrossfade=d=3", joined)
+        self.assertEqual(command[command.index("-t") + 1], "3600")
+        self.assertEqual(command.count("-loop"), 1)
+
+    def test_playlist_dry_run_needs_no_model_or_image(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "music_video_cli.py"),
+                "playlist",
+                "--backend",
+                "ace-step",
+                "--genre",
+                "techno",
+                "--dry-run",
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Playlist: one-hour instrumental video", result.stdout)
+        self.assertIn("Timeline: 3633s audio -> 3600s video", result.stdout)
+        self.assertIn("Track 01/12", result.stdout)
+        self.assertIn("Render: ffmpeg", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

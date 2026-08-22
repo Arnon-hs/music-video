@@ -14,6 +14,7 @@ Git 仓库只保存编排代码和安全配置。生成的音频/视频、图片
 - MusicGen、ACE-Step、DiffRhythm 2 和 Stable Audio 3 适配器；
 - 在终端中显示当前阶段、可信进度数据存在时的百分比、已用时间和后端输出；
 - 可选：使用本地图片合成 MP4；
+- 使用同一流派、不同长度的曲目、淡入淡出过渡和一张适配图片制作一小时播放列表视频；
 - `genres`、`doctor` 和 `status` 命令支持 JSON 输出；
 - 通过 Postiz 创建私密草稿；
 - CLI 不会在后台自动下载模型或媒体文件。
@@ -109,6 +110,32 @@ cd music-video
   --duration 90 \
   --prompt "Instrumental modular electronic music, 118 BPM, evolving polyrhythms, deep bass, no vocals, no speech, original melody"
 ```
+
+### 一小时播放列表视频
+
+将拥有使用权的封面图片放入 `assets/images`，先检查完整计划，再启动生成：
+
+```bash
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg \
+  --dry-run
+
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg \
+  --force-cpu
+```
+
+该命令会生成同一流派的多首独立曲目，每首曲目具有不同的时长、seed 和编曲 prompt 变化。随后使用三秒 crossfade 连接曲目，并渲染总时长恰好为 3600 秒的 H.264/AAC 视频。所选图片会完整适配到 1280x720 画面并添加边框，不会裁剪或拉伸。
+
+CLI 会根据 backend 的时长限制自动选择曲目数量：MusicGen/ACE-Step 通常为 12 首，Stable Audio 3 为 18 首，DiffRhythm 2 为 20 首。可使用 `--tracks` 修改数量，使用 `--crossfade` 调整过渡时长，使用 `--prompt` 设置整个专辑的风格，或使用 `--output` 指定最终路径。无效组合会在模型启动前被拒绝。
+
+CLI 会通过 `ffprobe` 检查已有曲目的时长并复用有效文件，因此中断的播放列表任务可以继续。DiffRhythm/Stable Audio 在未明确指定 `--allow-downloads` 时保持 offline mode；MusicGen 则保留独立的手动 `DOWNLOAD_MODEL` 确认。CLI 也会在报告成功前检查最终视频的时长。
+
+如需引导式流程，请不带参数运行 `./music-video`，然后选择 **One-hour playlist video**。可通过 `./music-video status` 和 `./music-video status --json` 查看进度。检查完整 MP4 后，请先使用现有的 Postiz `--dry-run` 流程，再创建私密 YouTube 草稿。
 
 主要参数：
 

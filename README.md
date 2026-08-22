@@ -14,6 +14,7 @@ The repository contains orchestration code and safe configuration only. Generate
 - MusicGen, ACE-Step, DiffRhythm 2, and Stable Audio 3 adapters;
 - live stage, percentage when available, elapsed time, and backend output in the terminal;
 - optional MP4 assembly from local images;
+- one-hour playlist videos with varied same-genre tracks, crossfades, and one fitted image;
 - machine-readable `genres`, `doctor`, and `status` output;
 - private Postiz/YouTube draft workflow;
 - no model or media downloads without the underlying tool's explicit action.
@@ -109,6 +110,32 @@ Use an LLM-written instrumental prompt instead of the built-in genre prompt:
   --duration 90 \
   --prompt "Instrumental modular electronic music, 118 BPM, evolving polyrhythms, deep bass, no vocals, no speech, original melody"
 ```
+
+### One-hour playlist video
+
+Put a permitted cover image in `assets/images`, inspect the complete plan, and then run it:
+
+```bash
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg \
+  --dry-run
+
+./music-video playlist \
+  --backend ace-step \
+  --genre lofi \
+  --image assets/images/cover.jpg \
+  --force-cpu
+```
+
+The command generates distinct same-genre tracks with different durations, seeds, and arrangement prompts. It joins them with three-second crossfades and renders exactly 3,600 seconds of H.264/AAC video. The selected image is fitted inside 1280x720 with padding, never cropped or stretched.
+
+Track count is selected automatically for each backend's duration limit: normally 12 for MusicGen/ACE-Step, 18 for Stable Audio 3, and 20 for DiffRhythm 2. Override it with `--tracks`, adjust transitions with `--crossfade`, provide an album-wide style with `--prompt`, or choose the final path with `--output`. Invalid combinations are rejected before model launch.
+
+Valid existing track files are reused after an `ffprobe` duration check, so an interrupted playlist can resume. DiffRhythm/Stable Audio remain offline unless `--allow-downloads` is explicitly set; MusicGen keeps its separate manual `DOWNLOAD_MODEL` gate. The final video is also duration-checked before the CLI reports success.
+
+Run `./music-video` without arguments and select **One-hour playlist video** for the guided workflow. Progress remains available through `./music-video status` and `./music-video status --json`. After reviewing the complete MP4, use the existing Postiz `--dry-run` workflow before creating a private YouTube draft.
 
 Important flags:
 

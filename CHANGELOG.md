@@ -6,6 +6,7 @@ This file records user-visible repository changes. The project follows semantic 
 
 ### Added
 
+- One-hour playlist CLI workflow with varied same-genre tracks, resumable generation, crossfades, one fitted image, progress reporting, and final duration validation.
 - Community contribution, conduct, support, and security policies.
 - Reproducible local and GitHub Actions quality gate.
 - Dependabot configuration for Python requirements and GitHub Actions.

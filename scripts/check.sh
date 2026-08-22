@@ -19,6 +19,7 @@ python3 scripts/check_repo_hygiene.py
 
 for backend in musicgen ace-step diffrhythm2 stable-audio3; do
   ./music-video generate --backend "$backend" --genre techno --duration 60 --dry-run >/dev/null
+  ./music-video playlist --backend "$backend" --genre techno --dry-run >/dev/null
 done
 
 git diff --check
