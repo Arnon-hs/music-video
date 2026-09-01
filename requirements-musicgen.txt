@@ -3,4 +3,4 @@ PyYAML==6.0.3
 safetensors==0.8.0
 soundfile==0.14.0
 torch==2.13.0
-transformers==5.15.1
+transformers==5.16.1
